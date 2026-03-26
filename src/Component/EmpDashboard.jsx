@@ -70,7 +70,6 @@ const EmpDashboard = () => {
     const user = JSON.parse(sessionStorage.getItem("user"));
     
     const fetchData = async () => {
-      debugger;
       const res = await getRequestdetails();
       setRows(res.data);
     }

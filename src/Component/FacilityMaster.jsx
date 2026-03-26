@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import {
-  Box, Button, TextField, Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
-  Paper, IconButton, Switch, Modal, Typography
+  Box, Button, TextField, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, FormControl, InputLabel, Select, MenuItem,
+  Paper, IconButton, Switch, Modal, Typography, TablePagination
 } from "@mui/material";
 import EditIcon from "@mui/icons-material/Edit";
 import AddCircleIcon from "@mui/icons-material/AddCircle";
@@ -18,13 +18,18 @@ const FacilityMaster = (empId) => {
   const [facilities, setFacilities] = useState([]);
   const [facilityName, setFacilityName] = useState("");
   const [search, setSearch] = useState("");
+  const [searchStatus, setSearchStatus] = useState("");
   const [editId, setEditId] = useState(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [inactiveModal, setInactiveModal] = useState(false);
   const [activeModal, setActiveModal] = useState(false);
   const [selectedLocationName, setSelectedLocationName] = useState("");
   const [selectedLocationId, setSelectedLocationId] = useState(null);
-  const {toast,showSuccess,showError,showWarning,closeToast} = useToast();
+  const { toast, showSuccess, showError, showWarning, closeToast } = useToast();
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
+
+
   const navigate = useNavigate();
 
   // Load all facilities
@@ -50,11 +55,11 @@ const FacilityMaster = (empId) => {
   // Add or Update Facility
   const handleSubmit = async () => {
     debugger;
-    if (!facilityName.trim()){
+    if (!facilityName.trim()) {
       showWarning("Facility name is required");
       return;
-    } 
-    if (facilities.some(f=>f.facilityName.toLowerCase() === facilityName.toLowerCase())){
+    }
+    if (facilities.some(f => f.facilityName.toLowerCase() === facilityName.toLowerCase())) {
       showWarning("Facility already exisit");
       return;
     }
@@ -89,6 +94,14 @@ const FacilityMaster = (empId) => {
     setEditId(item.id);
     setModalOpen(true);
   };
+  const handleChangePage = (event, newPage) => {
+    setPage(newPage);
+  };
+
+  const handleChangeRowsPerPage = (event) => {
+    setRowsPerPage(parseInt(event.target.value, 10));
+    setPage(0);
+  };
 
   // Toggle Active/Inactive
   const toggleStatus = async (item) => {
@@ -113,7 +126,7 @@ const FacilityMaster = (empId) => {
     setFacilityName("")
     setModalOpen(true)
   }
-const blueInputStyle = {
+  const blueInputStyle = {
     "& .MuiInputLabel-root": {
       color: "#1976d2"
     },
@@ -132,53 +145,66 @@ const blueInputStyle = {
       }
     }
   };
+
+  const filtered = facilities
+    .filter(f => f && typeof f.facilityName === "string")
+    .filter(f => {
+      const matchesSearch = f.facilityName.toLowerCase().includes(search.toLowerCase());
+      const matchesStatus =
+        searchStatus === "Active"
+          ? f.isActive === true
+          : searchStatus === "Inactive"
+            ? f.isActive === false
+            : true;
+
+      return matchesSearch && matchesStatus;
+    });
+
   return (<>
     {/* Heading */}
     <Box
-  sx={{
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    position: "relative",
-    mb: 4
-  }}
->
-  {/* BACK BUTTON - LEFT CORNER */}
-  <IconButton
-    onClick={() => navigate("/masters")}
-    sx={{
-      position: "absolute",
-      left: 0,
-      color: "#1976d2"
-    }}
-  >
-    <ArrowBackIcon sx={{ fontSize: 32 }} />  {/* Bigger size */}
-  </IconButton>
+      sx={{
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        position: "relative",
+        mb: 4
+      }}
+    >
+      {/* BACK BUTTON - LEFT CORNER */}
+      <IconButton
+        onClick={() => navigate("/masters")}
+        sx={{
+          position: "absolute",
+          left: 0,
+          color: "#1976d2"
+        }}
+      >
+        <ArrowBackIcon sx={{ fontSize: 32 }} />  {/* Bigger size */}
+      </IconButton>
 
-  {/* CENTER TITLE */}
-  <Typography
-    variant="h4"
-    sx={{
-      fontWeight: 700,
-      letterSpacing: "0.5px",
-      position: "relative",
-      "&::after": {
-        content: '""',
-        position: "absolute",
-        width: "60%",
-        height: "4px",
-        backgroundColor: "#1976d2",
-        bottom: -6,
-        left: "20%",
-        borderRadius: 2
-      }
-    }}
-  >
-    Facility Master
-  </Typography>
-</Box>
-
-
+      {/* CENTER TITLE */}
+      <Typography
+        variant="h4"
+        sx={{
+          fontWeight: 700,
+          letterSpacing: "0.5px",
+          position: "relative",
+          "&::after": {
+            content: '""',
+            position: "absolute",
+            width: "60%",
+            height: "4px",
+            backgroundColor: "#1976d2",
+            bottom: -6,
+            left: "20%",
+            borderRadius: 2
+          }
+        }}
+      >
+        Facility Master
+      </Typography>
+    </Box>
 
     <Box
       sx={{
@@ -198,8 +224,31 @@ const blueInputStyle = {
         Add Facility
       </Button>
 
-      {/* Search */}
-      <Box sx={{ display: "flex", alignItems: "center", mb: 3 }}>
+      {/* Search + Status Filter */}
+      <Box sx={{ display: "flex", gap: 2, mb: 3 }}>
+
+        {/* Status Dropdown */}
+        <FormControl size="small" sx={{ width: 200, ...blueInputStyle }}>
+          <InputLabel>Status</InputLabel>
+          <Select
+            value={searchStatus}
+            label="Status"
+            onChange={(e) => setSearchStatus(e.target.value)}
+            sx={{
+              "& .MuiSelect-select": {
+                padding: "10px 14px"   // match TextField padding
+              }
+            }}
+          >
+            <MenuItem value="">
+              <em>All</em>
+            </MenuItem>
+            <MenuItem value="Active">Active</MenuItem>
+            <MenuItem value="Inactive">Inactive</MenuItem>
+          </Select>
+        </FormControl>
+
+        {/* Search Field */}
         <TextField
           label="Search Facility"
           variant="outlined"
@@ -209,10 +258,12 @@ const blueInputStyle = {
           onChange={(e) => setSearch(e.target.value)}
           sx={{ ...blueInputStyle }}
         />
+
+        {/* Search Icon */}
         <SearchIcon
           sx={{
-            ml: 1,
-            color: "#1976d2"       // icon color
+            color: "#1976d2",
+            mt: "4px"   // aligns icon with TextField
           }}
         />
 
@@ -224,20 +275,20 @@ const blueInputStyle = {
           <TableHead sx={{ bgcolor: "#f5f5f5" }}>
             <TableRow>
               <TableCell sx={{ fontWeight: "bold" }}>S.No</TableCell>
-              <TableCell sx={{  fontWeight: "bold" }}>Facility</TableCell>
-              <TableCell sx={{  fontWeight: "bold" }}>Status</TableCell>
-              <TableCell sx={{  fontWeight: "bold" }}>Action</TableCell>
+              <TableCell sx={{ fontWeight: "bold" }}>Facility</TableCell>
+              <TableCell sx={{ fontWeight: "bold" }}>Status</TableCell>
+              <TableCell sx={{ fontWeight: "bold" }}>Action</TableCell>
             </TableRow>
           </TableHead>
 
 
           <TableBody>
             {(() => {
-              const filtered = facilities
-                .filter((f) => f && typeof f.facilityName === "string")
-                .filter((f) =>
-                  f.facilityName.toLowerCase().includes(search.toLowerCase())
-                );
+              const paginated = filtered.slice(
+                page * rowsPerPage,
+                page * rowsPerPage + rowsPerPage
+              );
+
 
               if (filtered.length === 0) {
                 return (
@@ -249,9 +300,9 @@ const blueInputStyle = {
                 );
               }
 
-              return filtered.map((item, index) => (
+              return paginated.map((item, index) => (
                 <TableRow key={item.id}>
-                  <TableCell>{index + 1}</TableCell>
+                  <TableCell>{page * rowsPerPage + index + 1}</TableCell>
                   <TableCell>{item.facilityName}</TableCell>
                   <TableCell>
                     <Switch
@@ -277,9 +328,29 @@ const blueInputStyle = {
               ));
             })()}
           </TableBody>
-
-
         </Table>
+
+        <TablePagination
+          component="div"
+          count={filtered.length}
+          page={page}
+          onPageChange={handleChangePage}
+          rowsPerPage={rowsPerPage}
+          onRowsPerPageChange={handleChangeRowsPerPage}
+          rowsPerPageOptions={[5, 10, 25, 50]}
+          sx={{
+            "& .MuiTablePagination-toolbar": {
+              flexWrap: "nowrap",
+              alignItems: "center",
+            },
+            "& .MuiTablePagination-selectLabel": {
+              margin: 0,
+            },
+            "& .MuiTablePagination-displayedRows": {
+              margin: 0,
+            },
+          }}
+        />
       </TableContainer>
 
       {/* Add/Edit Modal */}
@@ -306,7 +377,7 @@ const blueInputStyle = {
             label="Facility Name"
             value={facilityName}
             onChange={(e) => setFacilityName(e.target.value)}
-            sx={{ ...blueInputStyle, mb:2 }}
+            sx={{ ...blueInputStyle, mb: 2 }}
           />
 
           <Button variant="contained" fullWidth onClick={handleSubmit}>
@@ -473,7 +544,7 @@ const blueInputStyle = {
         </Box>
       </Modal>
     )}
-  <Toast toast={toast} closeToast={closeToast} />
+    <Toast toast={toast} closeToast={closeToast} />
   </>
   );
 };

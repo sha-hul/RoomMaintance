@@ -150,10 +150,10 @@ const MaintenanceRequest = ({ employeeName, empId, contactNo }) => {
     const validateForm = () => {
         const valArr = [];
 
-        if (!form.facility || form.facility == 0) valArr.push("Facility");
+        if (!form.facility || form.facility === 0) valArr.push("Facility");
         if (!form.location) valArr.push("Location");
         if (!form.apartment) valArr.push("Flat Room Number");
-        if (!form.category || form.category == 0) valArr.push("Category");
+        if (!form.category || form.category === 0) valArr.push("Category");
         if (!form.subCategory) valArr.push("Sub Category");
         if (!form.description) valArr.push("Description");
         if (form.description && form.description.length <= 5)

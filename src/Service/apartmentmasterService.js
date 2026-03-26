@@ -41,3 +41,13 @@ export const changeApartmentStatus = async (id, curStatus) => {
     });
     return res;
 };
+
+// Get Encrypt URL
+export const getEncryptUrl = async (payload) => {
+    const res = await axios.post(`${API_URL_Apartment}/encrypt`, {
+        facid: `${payload.facid}`,
+        locid: `${payload.locid}`,
+        apart: `${payload.apart}`
+    });
+    return res.data.encryptedUrl;
+};

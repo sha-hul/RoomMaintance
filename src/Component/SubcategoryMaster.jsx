@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import {
-  Box, Button, TextField, Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
+  Box, Button, TextField, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TablePagination,
   Paper, IconButton, Switch, Modal, Typography, MenuItem, Select, FormControl, InputLabel
 } from "@mui/material";
 import EditIcon from "@mui/icons-material/Edit";
@@ -20,6 +20,7 @@ const SubcategoryMaster = () => {
 
   const [categoryId, setCategoryId] = useState("");
   const [searchCategoryId, setSearchCategoryId] = useState("");
+  const [searchStatus, setSearchStatus] = useState("");
   const [subCategoryName, setSubcategoryName] = useState("");
 
   const [search, setSearch] = useState("");
@@ -30,6 +31,18 @@ const SubcategoryMaster = () => {
   const [selectedSubcategoryId, setSelectedSubcategoryId] = useState(null);
   const [selectedSubcategoryName, setSelectedSubcategoryName] = useState("");
   const { toast, showSuccess, showError, showWarning, closeToast } = useToast();
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
+
+  const handleChangePage = (event, newPage) => {
+    setPage(newPage);
+  };
+
+  const handleChangeRowsPerPage = (event) => {
+    setRowsPerPage(parseInt(event.target.value, 10));
+    setPage(0);
+  };
+
   const navigate = useNavigate();
   // Load Categories + Subcategories
   const loadData = async () => {
@@ -65,15 +78,15 @@ const SubcategoryMaster = () => {
 
   const handleSubmit = async () => {
     debugger;
-    if (!categoryId || !subCategoryName.trim()){
+    if (!categoryId || !subCategoryName.trim()) {
       showWarning("Select Category Dropdown/Subcategory name is required");
-    return;
-    } 
+      return;
+    }
 
     // Duplicate check: same Category + same SubCategory name
     const isDuplicate = subcategories.some(a =>
       a.categoryID === categoryId &&
-      a.subCategoryName.toLowerCase() === subCategoryName.toLowerCase() 
+      a.subCategoryName.toLowerCase() === subCategoryName.toLowerCase()
     );
 
     if (isDuplicate) {
@@ -97,7 +110,7 @@ const SubcategoryMaster = () => {
       setModalOpen(false);
       loadData();
     } catch (error) {
-       if (editId)
+      if (editId)
         showError("Failed to update Subcategory");
       else
         showError("Failed to save Subcategory");
@@ -153,6 +166,26 @@ const SubcategoryMaster = () => {
       }
     }
   };
+
+  const filtered = subcategories.filter(s => {
+    const matchesCategory = searchCategoryId
+      ? s.categoryID === searchCategoryId
+      : true;
+
+    const matchesSearch = s.subCategoryName
+      .toLowerCase()
+      .includes(search.toLowerCase());
+
+    const matchesStatus =
+      searchStatus === "Active"
+        ? s.isActive === true
+        : searchStatus === "Inactive"
+          ? s.isActive === false
+          : true;
+
+    return matchesCategory && matchesSearch && matchesStatus;
+  });
+
 
   return (
     <>
@@ -226,6 +259,32 @@ const SubcategoryMaster = () => {
           }}
         >
 
+          {/* Status Dropdown */}
+          <FormControl size="small" sx={{ width: 200, ...orangeInputStyle }}>
+            <InputLabel>Status</InputLabel>
+            <Select
+              value={searchStatus}
+              label="Search Status"
+              onChange={(e) => setSearchStatus(e.target.value)}
+              sx={{
+                "& .MuiSelect-select": {
+                  padding: "10px 14px"   // match TextField small padding
+                }
+              }}
+            >
+              {/* Empty option to clear filter */}
+              <MenuItem value="">
+                <em>All</em>
+              </MenuItem>
+              <MenuItem value="Active">
+                Active
+              </MenuItem>
+              <MenuItem value="Inactive">
+                Inactive
+              </MenuItem>
+            </Select>
+          </FormControl>
+
           {/* Category Dropdown */}
           <FormControl sx={{ flex: 1, ...orangeInputStyle }}>
             <InputLabel>Search Category</InputLabel>
@@ -252,6 +311,8 @@ const SubcategoryMaster = () => {
             </Select>
           </FormControl>
 
+
+
           {/* Search Subcategory */}
           <Box sx={{ display: "flex", alignItems: "center", flex: 1 }}>
             <TextField
@@ -272,6 +333,8 @@ const SubcategoryMaster = () => {
             />
           </Box>
 
+
+
         </Box>
 
 
@@ -291,15 +354,11 @@ const SubcategoryMaster = () => {
             <TableBody>
               {(() => {
                 // Normalize subcategory name property
-                const filtered = subcategories.filter(s => {
-                  const matchesCategory = searchCategoryId ? s.categoryID === searchCategoryId : true;
+                const paginated = filtered.slice(
+                  page * rowsPerPage,
+                  page * rowsPerPage + rowsPerPage
+                );
 
-                  const matchesSearch = s.subCategoryName
-                    .toLowerCase()
-                    .includes(search.toLowerCase());
-
-                  return matchesCategory && matchesSearch;
-                });
 
 
                 if (filtered.length === 0) {
@@ -312,12 +371,12 @@ const SubcategoryMaster = () => {
                   );
                 }
 
-                return filtered.map((item, index) => {
+                return paginated.map((item, index) => {
                   const category = categories.find(f => f.id === item.categoryID);
                   const hasCategory = categories.filter(f => f.isActive).some(f => f.id === item.categoryID);
                   return (
                     <TableRow key={item.id}>
-                      <TableCell>{index + 1}</TableCell>
+                      <TableCell>{page * rowsPerPage + index + 1}</TableCell>
 
                       {/* Category Name */}
                       <TableCell>{category?.categoryName || "-"}</TableCell>
@@ -369,6 +428,28 @@ const SubcategoryMaster = () => {
             </TableBody>
 
           </Table>
+          <TablePagination
+            component="div"
+            count={filtered.length}
+            page={page}
+            onPageChange={handleChangePage}
+            rowsPerPage={rowsPerPage}
+            onRowsPerPageChange={handleChangeRowsPerPage}
+            rowsPerPageOptions={[5, 10, 25, 50]}
+            sx={{
+              "& .MuiTablePagination-toolbar": {
+                flexWrap: "nowrap",
+                alignItems: "center",
+              },
+              "& .MuiTablePagination-selectLabel": {
+                margin: 0,
+              },
+              "& .MuiTablePagination-displayedRows": {
+                margin: 0,
+              },
+            }}
+          />
+
         </TableContainer>
 
         {/* Add/Edit Modal */}

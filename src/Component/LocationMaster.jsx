@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import {
   Box, Button, TextField, Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
-  Paper, IconButton, Switch, Modal, Typography, MenuItem, Select, FormControl, InputLabel
+  Paper, IconButton, Switch, Modal, Typography, MenuItem, Select, FormControl, InputLabel, TablePagination
 } from "@mui/material";
 import EditIcon from "@mui/icons-material/Edit";
 import AddCircleIcon from "@mui/icons-material/AddCircle";
@@ -29,6 +29,7 @@ const LocationMaster = () => {
   const [pool, setPool] = useState(false);
 
   const [search, setSearch] = useState("");
+  const [searchStatus, setSearchStatus] = useState("");
   const [editId, setEditId] = useState(null);
   const [modalOpen, setModalOpen] = useState(false);
 
@@ -36,6 +37,9 @@ const LocationMaster = () => {
   const [selectedLocationId, setSelectedLocationId] = useState(null);
   const [selectedLocationName, setSelectedLocationName] = useState("");
   const { toast, showSuccess, showError, showWarning, closeToast } = useToast();
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
+
   const navigate = useNavigate();
 
   // Load Facilities + Locations
@@ -126,6 +130,16 @@ const LocationMaster = () => {
     setModalOpen(true);
   };
 
+
+  const handleChangePage = (event, newPage) => {
+    setPage(newPage);
+  };
+
+  const handleChangeRowsPerPage = (event) => {
+    setRowsPerPage(parseInt(event.target.value, 10));
+    setPage(0);
+  };
+
   // Toggle Status
   const toggleStatus = async (item) => {
     try {
@@ -166,6 +180,25 @@ const LocationMaster = () => {
       }
     }
   };
+
+  const filtered = locations.filter(a => {
+    const matchesFacility = searchFacilityId
+      ? a.facilityID === searchFacilityId
+      : true;
+
+    const matchesSearch = a.locationName
+      .toLowerCase()
+      .includes(search.toLowerCase());
+
+    const matchesStatus =
+      searchStatus === "Active"
+        ? a.isActive === true
+        : searchStatus === "Inactive"
+          ? a.isActive === false
+          : true;
+
+    return matchesFacility && matchesSearch && matchesStatus;
+  });
 
   return (
     <>
@@ -238,6 +271,31 @@ const LocationMaster = () => {
           }}
         >
 
+          {/* Status Dropdown */}
+          <FormControl size="small" sx={{ width: 200, ...orangeInputStyle }}>
+            <InputLabel>Status</InputLabel>
+            <Select
+              value={searchStatus}
+              label="Search Status"
+              onChange={(e) => setSearchStatus(e.target.value)}
+              sx={{
+                "& .MuiSelect-select": {
+                  padding: "10px 14px"   // match TextField small padding
+                }
+              }}
+            >
+              <MenuItem value="">
+                <em>All</em>
+              </MenuItem>
+              <MenuItem value="Active">
+                Active
+              </MenuItem>
+              <MenuItem value="Inactive">
+                Inactive
+              </MenuItem>
+            </Select>
+          </FormControl>
+
           {/* Facility Dropdown */}
           <FormControl sx={{ flex: 1, ...orangeInputStyle }}>
             <InputLabel>Search Facility</InputLabel>
@@ -303,17 +361,11 @@ const LocationMaster = () => {
 
             <TableBody>
               {(() => {
-                const filtered = locations.filter(a => {
-                  const matchesFacility = searchFacilityId
-                    ? a.facilityID === searchFacilityId
-                    : true;
+                const paginated = filtered.slice(
+                  page * rowsPerPage,
+                  page * rowsPerPage + rowsPerPage
+                );
 
-                  const matchesSearch = a.locationName
-                    .toLowerCase()
-                    .includes(search.toLowerCase());
-
-                  return matchesFacility && matchesSearch;
-                });
 
 
                 if (filtered.length === 0) {
@@ -326,12 +378,12 @@ const LocationMaster = () => {
                   );
                 }
 
-                return filtered.map((item, index) => {
+                return paginated.map((item, index) => {
                   const facility = facilities.find(f => f.id === item.facilityID);
                   const hasFacility = facilities.filter(f => f.isActive).some(f => f.id === item.facilityID);
                   return (
                     <TableRow key={item.id}>
-                      <TableCell>{index + 1}</TableCell>
+                      <TableCell>{page * rowsPerPage + index + 1}</TableCell>
 
                       {/* Facility Name */}
                       <TableCell>{facility?.facilityName || "-"}</TableCell>
@@ -383,6 +435,28 @@ const LocationMaster = () => {
             </TableBody>
 
           </Table>
+          <TablePagination
+            component="div"
+            count={filtered.length}
+            page={page}
+            onPageChange={handleChangePage}
+            rowsPerPage={rowsPerPage}
+            onRowsPerPageChange={handleChangeRowsPerPage}
+            rowsPerPageOptions={[5, 10, 25, 50]}
+            sx={{
+              "& .MuiTablePagination-toolbar": {
+                flexWrap: "nowrap",
+                alignItems: "center",
+              },
+              "& .MuiTablePagination-selectLabel": {
+                margin: 0,
+              },
+              "& .MuiTablePagination-displayedRows": {
+                margin: 0,
+              },
+            }}
+          />
+
         </TableContainer>
 
         {/* Add/Edit Modal */}
@@ -464,7 +538,7 @@ const LocationMaster = () => {
                   }
                   sx={{ color: "#d81b60" }}
                   label="Pool"
-                  />
+                />
               </FormGroup>
             </FormControl>
 
