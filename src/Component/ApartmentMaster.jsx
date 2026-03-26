@@ -1,12 +1,12 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Box, Button, TextField, Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
-  Paper, IconButton, Switch, Modal, Typography, MenuItem, Select, FormControl, InputLabel
+  Paper, IconButton, Switch, Modal, Typography, MenuItem, Select, FormControl, InputLabel, TablePagination
 } from "@mui/material";
 import EditIcon from "@mui/icons-material/Edit";
 import AddCircleIcon from "@mui/icons-material/AddCircle";
 import SearchIcon from "@mui/icons-material/Search";
-import { getAllApartments, addApartment, updateApartment, changeApartmentStatus } from "../Service/apartmentmasterService.js";
+import { getAllApartments, addApartment, updateApartment, changeApartmentStatus, getEncryptUrl } from "../Service/apartmentmasterService.js";
 import { getAllLocations } from "../Service/locationmasterService.js"
 import { getAllFacility } from "../Service/facilitymasterService.js"
 import WarningAmberIcon from '@mui/icons-material/WarningAmber';
@@ -18,6 +18,9 @@ import CircularProgress from "@mui/material/CircularProgress";
 import QrCode2RoundedIcon from '@mui/icons-material/QrCode2Rounded';
 import Divider from "@mui/material/Divider";
 import Stack from "@mui/material/Stack";
+import QRCode from "react-qr-code";
+import jsPDF from "jspdf";
+import html2canvas from "html2canvas";
 
 const ApartmentMaster = () => {
 
@@ -36,16 +39,20 @@ const ApartmentMaster = () => {
   const [searchLocations, setSearchLocations] = useState([]); // for search options
 
   const [search, setSearch] = useState("");
+  const [searchStatus, setSearchStatus] = useState("");
   const [editId, setEditId] = useState(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [qrmodalOpen, setQRModalOpen] = useState(false);
-  const qrImage = "https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=Example";
+  const [qrUrl, setQrUrl] = useState("");
+
 
   const [statusModal, setStatusModal] = useState({ open: false, isActive: false });
   const [selectedApartmentId, setSelectedApartmentId] = useState(null);
   const [selectedApartmentName, setSelectedApartmentName] = useState("");
   const { toast, showSuccess, showError, showWarning, closeToast } = useToast();
   const [pageLoading, setPageLoading] = useState(true);
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
 
   const navigate = useNavigate();
 
@@ -117,7 +124,7 @@ const ApartmentMaster = () => {
   }
 
   const handleSubmit = async () => {
-
+    debugger;
     if (!facilityId) {
       showWarning("Select Facility Dropdown is required");
       return;
@@ -130,7 +137,7 @@ const ApartmentMaster = () => {
       showWarning("Apartment name is required");
       return;
     }
-    if (!roomCount.trim()) {
+    if (!String(roomCount).trim()) {
       showWarning("Room Count is required");
       return;
     }
@@ -153,10 +160,10 @@ const ApartmentMaster = () => {
 
     try {
       if (editId) {
-        await updateApartment(editId, locationId, apartmentName, esubId, roomCount);
+        await updateApartment(editId, locationId, apartmentName, esubId, String(roomCount));
         showSuccess("Apartment updated successfully");
       } else {
-        await addApartment(locationId, apartmentName, esubId, roomCount);
+        await addApartment(locationId, apartmentName, esubId, String(roomCount));
         showSuccess("Apartment added successfully");
       }
 
@@ -187,16 +194,31 @@ const ApartmentMaster = () => {
     setModalOpen(true);
   };
 
-  // Edit
-  const handleQR = (item) => {
+  // handleQR
+  const handleQR = async (item) => {
     debugger
     setFacilityId(item.facilityId);
     setLocationId(item.locationId);
     setApartmentName(item.apartmentName);
     setroomCount(item.roomCount);
-    setesubId(item.esubscriptionID)
-    setroomCount(item.roomCount)
+    setesubId(item.esubscriptionID);
+    const payloadURL = {
+      facid: item.facilityId,
+      locid: item.locationId,
+      apart: item.apartmentName
+    };
+    let url = await getEncryptUrl(payloadURL); //create the react method and also the c# method
+    setQrUrl(url);
     setQRModalOpen(true);
+  };
+
+  const handleChangePage = (event, newPage) => {
+    setPage(newPage);
+  };
+
+  const handleChangeRowsPerPage = (event) => {
+    setRowsPerPage(parseInt(event.target.value, 10));
+    setPage(0);
   };
 
   // Toggle Status
@@ -219,19 +241,87 @@ const ApartmentMaster = () => {
     });
   };
 
-  const downloadQR = () => {
-    const link = document.createElement("a");
-    link.href = qrImage;
-    link.download = "qrcode.png";
-    link.click();
+  // Download QR Code
+
+  const downloadQR = async (facId, locId, apartName) => {
+    const qrElement = document.getElementById("qr-download-area");
+    if (!qrElement) return;
+
+    // Convert QR to canvas
+    const canvas = await html2canvas(qrElement, { scale: 3 });
+    const imgData = canvas.toDataURL("image/png");
+
+    // Create PDF
+    const pdf = new jsPDF({
+      orientation: "portrait",
+      unit: "pt",
+      format: "a4"
+    });
+
+    const pageWidth = pdf.internal.pageSize.getWidth();
+
+    // Title
+    pdf.setFont("helvetica", "bold");
+    pdf.setFontSize(24);
+    pdf.text("Room Maintenance", pageWidth / 2, 60, { align: "center" });
+
+
+    // Large QR Code (centered)
+    const qrSize = 350;
+    const qrX = (pageWidth - qrSize) / 2;
+    const qrY = 100;
+
+    // Frame around QR
+    pdf.setLineWidth(1.5);
+    pdf.roundedRect(qrX - 15, qrY - 15, qrSize + 30, qrSize + 30, 12, 12);
+
+    // Insert QR image
+    pdf.addImage(imgData, "PNG", qrX, qrY, qrSize, qrSize);
+
+    // Details below QR
+    pdf.setFont("helvetica", "normal");
+    pdf.setFontSize(14);
+
+    const detailsY = qrY + qrSize + 60;
+
+    pdf.text(`Location: ${locations.find((item) => item.id === locId)?.locationName}`, pageWidth / 2, detailsY, {
+      align: "center"
+    });
+
+    pdf.text(`Apartment: ${apartName}`, pageWidth / 2, detailsY + 25, {
+      align: "center"
+    });
+
+    // Caption
+    pdf.setFont("helvetica", "italic");
+
+    pdf.setFontSize(12);
+    pdf.setTextColor("#555");
+
+    pdf.text(
+      "Scan the QR code to raise a Room Maintenance Request",
+      pageWidth / 2,
+      detailsY + 70,
+      { align: "center" }
+    );
+
+    // Footer
+    pdf.setFontSize(10);
+    pdf.setTextColor("#999");
+    pdf.text("Generated by Mouwasat Support Service", pageWidth / 2, 820, {
+      align: "center"
+    });
+
+    pdf.save("RoomMaintenance_QR.pdf");
   };
+
 
   const shareQR = async () => {
     try {
       await navigator.share({
         title: "QR Code",
         text: "Scan this QR code",
-        url: qrImage
+        url: qrUrl
       });
     } catch (err) {
       console.log("Share failed:", err);
@@ -293,6 +383,32 @@ const ApartmentMaster = () => {
     );
   }
 
+  //QR Code Details
+  const loc = locations.find(l => l.id === locationId);
+  const AmenitiesArr = [];
+  if (loc?.gym) AmenitiesArr.push("Gym");
+  if (loc?.pool) AmenitiesArr.push("Pool");
+
+  //#shahul need to check the filtering working fine
+  const filtered = apartments.filter(a => {
+    const matchesFacility = searchFacilityId
+      ? a.facilityId === searchFacilityId
+      : true;
+    const matchesLocation = searchLocationId
+      ? a.locationId === searchLocationId
+      : true;
+    const matchesSearch = a.apartmentName
+      .toLowerCase()
+      .includes(search.toLowerCase());
+    const matchesStatus =
+      searchStatus === "Active"
+        ? a.isActive === true
+        : searchStatus === "Inactive"
+          ? a.isActive === false
+          : true;
+
+    return matchesLocation && matchesSearch && matchesFacility && matchesStatus;
+  });
   return (
     <>
       {/* Heading */}
@@ -363,6 +479,31 @@ const ApartmentMaster = () => {
             mb: 3
           }}
         >
+          {/* Status Dropdown */}
+          <FormControl size="small" sx={{ width: 200, ...orangeInputStyle }}>
+            <InputLabel>Status</InputLabel>
+            <Select
+              value={searchStatus}
+              label="Search Status"
+              onChange={(e) => setSearchStatus(e.target.value)}
+              sx={{
+                "& .MuiSelect-select": {
+                  padding: "10px 14px"   // match TextField small padding
+                }
+              }}
+            >
+              {/* Empty option to clear filter */}
+              <MenuItem value="">
+                <em>All</em>
+              </MenuItem>
+              <MenuItem value="Active">
+                Active
+              </MenuItem>
+              <MenuItem value="Inactive">
+                Inactive
+              </MenuItem>
+            </Select>
+          </FormControl>
           {/* Facility Dropdown */}
           <FormControl sx={{ flex: 1, ...orangeInputStyle }}>
             <InputLabel>Search Facility</InputLabel>
@@ -441,6 +582,7 @@ const ApartmentMaster = () => {
 
         {/* Table */}
         <TableContainer component={Paper}>
+
           <Table>
             <TableHead sx={{ bgcolor: "#f5f5f5" }}>
               <TableRow>
@@ -456,38 +598,30 @@ const ApartmentMaster = () => {
 
             <TableBody>
               {(() => {
-                //#shahul need to check the filtering working fine
-                const filtered = apartments.filter(a => {
-                  const matchesFacility = searchFacilityId
-                    ? a.facilityId === searchFacilityId
-                    : true;
-                  const matchesLocation = searchLocationId
-                    ? a.locationId === searchLocationId
-                    : true;
-                  const matchesSearch = a.apartmentName
-                    .toLowerCase()
-                    .includes(search.toLowerCase());
 
-                  return matchesLocation && matchesSearch && matchesFacility;
-                });
 
                 if (filtered.length === 0) {
                   return (
                     <TableRow>
-                      <TableCell colSpan={5} align="center" sx={{ py: 3, color: "#888" }}>
+                      <TableCell colSpan={7} align="center" sx={{ py: 3, color: "#888" }}>
                         No Record Found
                       </TableCell>
                     </TableRow>
                   );
                 }
 
-                return filtered.map((item, index) => {
+                const paginated = filtered.slice(
+                  page * rowsPerPage,
+                  page * rowsPerPage + rowsPerPage
+                );
+
+                return paginated.map((item, index) => {
                   const facility = facilities.find(f => f.id === item.facilityId);
                   const location = allLocations.find(f => f.id === item.locationId);
                   const hasLocation = allLocations.filter(f => f.isActive).some(f => f.id === item.locationId);
                   return (
                     <TableRow key={item.id}>
-                      <TableCell>{index + 1}</TableCell>
+                      <TableCell>{page * rowsPerPage + index + 1}</TableCell>
 
                       {/* Facility Name */}
                       <TableCell>{facility?.facilityName || "-"}</TableCell>
@@ -526,6 +660,7 @@ const ApartmentMaster = () => {
                       <TableCell>
                         {hasLocation ? (
                           <IconButton
+                            title="Edit Details"
                             onClick={() => handleEdit(item)}
                             sx={{ color: "#ef6c00" }}
                           >
@@ -538,6 +673,7 @@ const ApartmentMaster = () => {
                         )}
                         {hasLocation ? (
                           <IconButton
+                            title="QR Code Details"
                             onClick={() => handleQR(item)}
                             sx={{ color: "#ef6c00" }}
                           >
@@ -557,6 +693,27 @@ const ApartmentMaster = () => {
             </TableBody>
 
           </Table>
+          <TablePagination
+            component="div"
+            count={filtered.length}
+            page={page}
+            onPageChange={handleChangePage}
+            rowsPerPage={rowsPerPage}
+            onRowsPerPageChange={handleChangeRowsPerPage}
+            rowsPerPageOptions={[5, 10, 25, 50]}
+            sx={{
+              "& .MuiTablePagination-toolbar": {
+                flexWrap: "nowrap",
+                alignItems: "center",
+              },
+              "& .MuiTablePagination-selectLabel": {
+                margin: 0,
+              },
+              "& .MuiTablePagination-displayedRows": {
+                margin: 0,
+              },
+            }}
+          />
         </TableContainer>
 
         {/* Add/Edit Modal */}
@@ -672,21 +829,21 @@ const ApartmentMaster = () => {
           >
             {/* LEFT SIDE — DETAILS */}
             <Box sx={{ flex: 1 }}>
-              <Typography variant="h5" sx={{ mb: 2, fontWeight: 700, color: "#d81b60" }}>
+              <Typography variant="h5" sx={{ mb: 2, fontWeight: 700, color: "#ef6c00" }}>
                 Apartment Details
               </Typography>
 
               <Box sx={{ lineHeight: 2 }}>
-                <Typography><strong>Facility:</strong> {facilityId}</Typography>
-                <Typography><strong>Location:</strong> {locationId}</Typography>
+                <Typography><strong>Facility:</strong>{" "}{facilityId ? facilities.find(f => f.id === facilityId)?.facilityName : ""}</Typography>
+                <Typography><strong>Location:</strong>{" "}{locationId ? locations.find(l => l.id === locationId)?.locationName : ""}</Typography>
                 <Typography><strong>Apartment:</strong> {apartmentName}</Typography>
                 <Typography><strong>ESubscriptionID:</strong> {esubId}</Typography>
                 <Typography><strong>Room Count:</strong> {roomCount}</Typography>
-                <Typography>
-                  <strong>Amenities:</strong>
-                  {1 == 1 ? " Gym" : ""}
-                  {0 == 1 ? ", Pool" : ""}
-                </Typography>
+                {AmenitiesArr.length > 0 &&
+                  <Typography>
+                    <strong>Amenities:</strong> {AmenitiesArr.join(", ")}
+                  </Typography>
+                }
               </Box>
             </Box>
 
@@ -695,12 +852,13 @@ const ApartmentMaster = () => {
 
             {/* RIGHT SIDE — QR CODE */}
             <Box sx={{ flex: 1, textAlign: "center" }}>
-              <Typography variant="h5" sx={{ mb: 2, fontWeight: 700, color: "#1976d2" }}>
+              <Typography variant="h5" sx={{ mb: 2, fontWeight: 700, color: "#ef6c00" }}>
                 QR Code
               </Typography>
 
               {/* QR IMAGE BOX */}
               <Box
+                id="qr-download-area"
                 sx={{
                   width: 180,
                   height: 180,
@@ -715,15 +873,19 @@ const ApartmentMaster = () => {
                 }}
               >
                 {/* Replace with your QR image */}
-                <img src={qrImage} alt="QR Code" style={{ width: "100%", height: "100%" }} />
+                <QRCode style={{ width: "100%", height: "100%" }} value={qrUrl} />
               </Box>
 
               {/* ACTION BUTTONS */}
               <Stack direction="row" spacing={2} justifyContent="center">
-                <Button variant="contained" color="primary" onClick={downloadQR}>
+                <Button variant="contained" sx={{
+                  mb: 3,
+                  backgroundColor: "#ef6c00",
+                  "&:hover": { backgroundColor: "#d55a00" }
+                }} onClick={() => downloadQR(facilityId, locationId, apartmentName)}>
                   Download
                 </Button>
-                <Button variant="outlined" color="secondary" onClick={shareQR}>
+                <Button onClick={shareQR} variant="outlined" color="#d55a00" sx={{ color: "#ef6c00" }}>
                   Share
                 </Button>
               </Stack>

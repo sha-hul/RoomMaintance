@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import {
-  Box, Button, TextField, Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
-  Paper, IconButton, Switch, Modal, Typography
+  Box, Button, TextField, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TablePagination, FormControl, InputLabel, Select,
+  Paper, IconButton, Switch, Modal, Typography, MenuItem
 } from "@mui/material";
 import EditIcon from "@mui/icons-material/Edit";
 import AddCircleIcon from "@mui/icons-material/AddCircle";
@@ -18,6 +18,7 @@ const CategoryMaster = (empId) => {
   const [categories, setCategories] = useState([]);
   const [categoryName, setCategoryName] = useState("");
   const [search, setSearch] = useState("");
+  const [searchStatus, setSearchStatus] = useState("");
   const [editId, setEditId] = useState(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [inactiveModal, setInactiveModal] = useState(false);
@@ -26,6 +27,10 @@ const CategoryMaster = (empId) => {
   const [selectedLocationId, setSelectedLocationId] = useState(null);
   const { toast, showSuccess, showError, showWarning, closeToast } = useToast();
   const navigate = useNavigate();
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
+
+
   // Load all categories
   const loadCategories = async () => {
     try {
@@ -108,6 +113,15 @@ const CategoryMaster = (empId) => {
     setCategoryName("")
     setModalOpen(true)
   }
+  const handleChangePage = (event, newPage) => {
+    setPage(newPage);
+  };
+
+  const handleChangeRowsPerPage = (event) => {
+    setRowsPerPage(parseInt(event.target.value, 10));
+    setPage(0);
+  };
+
   const greenInputStyle = {
     "& .MuiInputLabel-root": {
       color: "#2e7d32"
@@ -127,51 +141,70 @@ const CategoryMaster = (empId) => {
       }
     }
   };
+
+  const filtered = categories
+    .filter(c => c && typeof c.categoryName === "string")
+    .filter(c => {
+      const matchesSearch = c.categoryName
+        .toLowerCase()
+        .includes(search.toLowerCase());
+
+      const matchesStatus =
+        searchStatus === "Active"
+          ? c.isActive === true
+          : searchStatus === "Inactive"
+            ? c.isActive === false
+            : true;
+
+      return matchesSearch && matchesStatus;
+    });
+
+
   return (<>
     {/* Heading */}
-      <Box
+    <Box
+      sx={{
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        position: "relative",
+        mb: 4
+      }}
+    >
+      {/* BACK BUTTON - LEFT CORNER */}
+      <IconButton
+        onClick={() => navigate("/masters")}
         sx={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          position: "relative",
-          mb: 4
+          position: "absolute",
+          left: 0,
+          color: "#2e7d32"
         }}
       >
-        {/* BACK BUTTON - LEFT CORNER */}
-        <IconButton
-          onClick={() => navigate("/masters")}
-          sx={{
-            position: "absolute",
-            left: 0,
-            color: "#2e7d32"
-          }}
-        >
-          <ArrowBackIcon sx={{ fontSize: 32 }} />  {/* Bigger size */}
-        </IconButton>
+        <ArrowBackIcon sx={{ fontSize: 32 }} />  {/* Bigger size */}
+      </IconButton>
 
-        {/* CENTER TITLE */}
-        <Typography
-          variant="h4"
-          sx={{
-            fontWeight: 700,
-            letterSpacing: "0.5px",
-            position: "relative",
-            "&::after": {
-              content: '""',
-              position: "absolute",
-              width: "60%",
-              height: "4px",
-              backgroundColor: "#2e7d32",
-              bottom: -6,
-              left: "20%",
-              borderRadius: 2
-            }
-          }}
-        >
-          Category Master
-        </Typography>
-      </Box>
+      {/* CENTER TITLE */}
+      <Typography
+        variant="h4"
+        sx={{
+          fontWeight: 700,
+          letterSpacing: "0.5px",
+          position: "relative",
+          "&::after": {
+            content: '""',
+            position: "absolute",
+            width: "60%",
+            height: "4px",
+            backgroundColor: "#2e7d32",
+            bottom: -6,
+            left: "20%",
+            borderRadius: 2
+          }
+        }}
+      >
+        Category Master
+      </Typography>
+    </Box>
 
 
     <Box
@@ -196,8 +229,31 @@ const CategoryMaster = (empId) => {
         Add Category
       </Button>
 
-      {/* Search */}
-      <Box sx={{ display: "flex", alignItems: "center", mb: 3 }}>
+      {/* Search + Status Filter */}
+      <Box sx={{ display: "flex", gap: 2, mb: 3 }}>
+
+        {/* Status Dropdown */}
+        <FormControl size="small" sx={{ width: 200, ...greenInputStyle }}>
+          <InputLabel>Status</InputLabel>
+          <Select
+            value={searchStatus}
+            label="Status"
+            onChange={(e) => setSearchStatus(e.target.value)}
+            sx={{
+              "& .MuiSelect-select": {
+                padding: "10px 14px"
+              }
+            }}
+          >
+            <MenuItem value="">
+              <em>All</em>
+            </MenuItem>
+            <MenuItem value="Active">Active</MenuItem>
+            <MenuItem value="Inactive">Inactive</MenuItem>
+          </Select>
+        </FormControl>
+
+        {/* Search Field */}
         <TextField
           label="Search Category"
           variant="outlined"
@@ -207,13 +263,8 @@ const CategoryMaster = (empId) => {
           onChange={(e) => setSearch(e.target.value)}
           sx={{ ...greenInputStyle }}
         />
-        <SearchIcon
-          sx={{
-            ml: 1,
-            color: "#2e7d32"       // icon color
-          }}
-        />
 
+        <SearchIcon sx={{ color: "#2e7d32", mt: "4px" }} />
       </Box>
 
       {/* Table */}
@@ -231,11 +282,10 @@ const CategoryMaster = (empId) => {
 
           <TableBody>
             {(() => {
-              const filtered = categories
-                .filter((f) => f && typeof f.categoryName === "string")
-                .filter((f) =>
-                  f.categoryName.toLowerCase().includes(search.toLowerCase())
-                );
+              const paginated = filtered.slice(
+                page * rowsPerPage,
+                page * rowsPerPage + rowsPerPage
+              );
 
               if (filtered.length === 0) {
                 return (
@@ -247,9 +297,9 @@ const CategoryMaster = (empId) => {
                 );
               }
 
-              return filtered.map((item, index) => (
+              return paginated.map((item, index) => (
                 <TableRow key={item.id}>
-                  <TableCell>{index + 1}</TableCell>
+                  <TableCell>{page * rowsPerPage + index + 1}</TableCell>
                   <TableCell>{item.categoryName}</TableCell>
                   <TableCell>
                     <Switch
@@ -278,6 +328,28 @@ const CategoryMaster = (empId) => {
 
 
         </Table>
+        <TablePagination
+          component="div"
+          count={filtered.length}
+          page={page}
+          onPageChange={handleChangePage}
+          rowsPerPage={rowsPerPage}
+          onRowsPerPageChange={handleChangeRowsPerPage}
+          rowsPerPageOptions={[5, 10, 25, 50]}
+          sx={{
+            "& .MuiTablePagination-toolbar": {
+              flexWrap: "nowrap",
+              alignItems: "center",
+            },
+            "& .MuiTablePagination-selectLabel": {
+              margin: 0,
+            },
+            "& .MuiTablePagination-displayedRows": {
+              margin: 0,
+            },
+          }}
+        />
+
       </TableContainer>
 
       {/* Add/Edit Modal */}
@@ -473,7 +545,7 @@ const CategoryMaster = (empId) => {
         </Box>
       </Modal>
     )}
-  <Toast toast={toast} closeToast={closeToast} />
+    <Toast toast={toast} closeToast={closeToast} />
 
   </>
   );

@@ -53,10 +53,10 @@ const Header = () => {
                 {/* RIGHT SIDE: Icons */}
                 {location.pathname !== "/" && (
                     <ul className="navbar-nav d-flex flex-row ms-auto">
-                        <li className="nav-item mx-2" onClick={onHome} style={{ cursor: "pointer" }}>
+                        {/* <li className="nav-item mx-2" onClick={onHome} style={{ cursor: "pointer" }}>
                             <Home style={{ color: "white" }} />
-                        </li>
-                        <li className="nav-item mx-2" onClick={onLogout} style={{ cursor: "pointer" }}>
+                        </li> */}
+                        <li className="nav-item mx-2" onClick={onLogout} style={{ cursor: "pointer" }} title="Logout">
                             <Logout style={{ color: "white" }} />
                         </li>
                     </ul>

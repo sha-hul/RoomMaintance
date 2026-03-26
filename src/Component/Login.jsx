@@ -13,144 +13,144 @@ const Login = () => {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
- const handleLogin = async () => {
-  setLoading(true);
-  if (!userId.trim() || !password.trim()) {
-    showWarning("Please enter UserID and Password");
-    setLoading(false)
-    return;
-  }
-
-  try {
-    const response = await UserLogin(userId, password);
-    const data = response.data;
-
-    // SUCCESS CASE
-    if (data.status) {
-      localStorage.setItem("token", data.token);
-
-      if (data.role.toLowerCase() === "admin")
-        navigate("/admindashboard");
-      else
-        navigate("/empdashboard");
-
+  const handleLogin = async () => {
+    setLoading(true);
+    if (!userId.trim() || !password.trim()) {
+      showWarning("Please enter UserID and Password");
+      setLoading(false)
       return;
     }
 
-  } catch (error) {
-    // ERROR CASE (400, 401, 404)
-    if (error.response && error.response.data) {
-      const err = error.response.data;
+    try {
+      const response = await UserLogin(userId, password);
+      const data = response.data;
 
-      switch (err.errorcode) {
-        case 101:
-          showWarning("Please enter UserID and Password");
-          break;
-        case 102:
-          showError("User ID not found");
-          break;
-        case 103:
-          showError("Kindly enter the correct password");
-          break;
-        default:
-          showError("Login failed");
+      // SUCCESS CASE
+      if (data.status) {
+        localStorage.setItem("token", data.token);
+
+        if (data.role.toLowerCase() === "admin")
+          navigate("/admindashboard");
+        else
+          navigate("/empdashboard");
+
+        return;
       }
-    } else {
-      showError("Server not reachable");
+
+    } catch (error) {
+      // ERROR CASE (400, 401, 404)
+      if (error.response && error.response.data) {
+        const err = error.response.data;
+
+        switch (err.errorcode) {
+          case 101:
+            showWarning("Please enter UserID and Password");
+            break;
+          case 102:
+            showError("User ID not found");
+            break;
+          case 103:
+            showError("Kindly enter the correct password");
+            break;
+          default:
+            showError("Login failed");
+        }
+      } else {
+        showError("Server not reachable");
+      }
     }
-  }
-  finally{
-    setLoading(false)
-  }
-};
+    finally {
+      setLoading(false)
+    }
+  };
 
 
- return (
-  <>
-    <Box
-      sx={{
-        height: "90vh",
-        display: "flex",
-        justifyContent: "center",
-        alignItems: "center",
-        background: "linear-gradient(135deg, #e3f2fd, #bbdefb)"
-      }}
-    >
-      <Paper
-        elevation={6}
+  return (
+    <>
+      <Box
         sx={{
-          p: 4,
-          width: 380,
-          borderRadius: 3,
-          textAlign: "center"
+          height: "90vh",
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          background: "linear-gradient(135deg, #e3f2fd, #bbdefb)"
         }}
       >
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            handleLogin();
+        <Paper
+          elevation={6}
+          sx={{
+            p: 4,
+            width: 380,
+            borderRadius: 3,
+            textAlign: "center"
           }}
         >
-          <Typography
-            variant="h5"
-            sx={{
-              mb: 3,
-              fontWeight: "bold",
-              color: "#0d47a1"
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              handleLogin();
             }}
           >
-            User Login
-          </Typography>
+            <Typography
+              variant="h5"
+              sx={{
+                mb: 3,
+                fontWeight: "bold",
+                color: "#0d47a1"
+              }}
+            >
+              Admin Login
+            </Typography>
 
-          <TextField
-            label="UserID"
-            variant="outlined"
-            fullWidth
-            sx={{
-              mb: 2,
-              "& .MuiOutlinedInput-root": { borderRadius: 2 }
-            }}
-            value={userId}
-            onChange={(e) => setUserId(e.target.value)}
-          />
+            <TextField
+              label="UserID"
+              variant="outlined"
+              fullWidth
+              sx={{
+                mb: 2,
+                "& .MuiOutlinedInput-root": { borderRadius: 2 }
+              }}
+              value={userId}
+              onChange={(e) => setUserId(e.target.value)}
+            />
 
-          <TextField
-            label="Password"
-            type="password"
-            variant="outlined"
-            fullWidth
-            sx={{
-              mb: 3,
-              "& .MuiOutlinedInput-root": { borderRadius: 2 }
-            }}
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-          />
+            <TextField
+              label="Password"
+              type="password"
+              variant="outlined"
+              fullWidth
+              sx={{
+                mb: 3,
+                "& .MuiOutlinedInput-root": { borderRadius: 2 }
+              }}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+            />
 
-          <LoadingButton
-  type="submit"
-  fullWidth
-  loading={loading}
-  loadingIndicator="Logging in..."
-  variant="contained"
-  sx={{
-    py: 1.2,
-    borderRadius: 2,
-    fontWeight: "bold",
-    backgroundColor: "#0d6efd",
-    "&:hover": { backgroundColor: "#0b5ed7" }
-  }}
->
-  Login
-</LoadingButton>
+            <LoadingButton
+              type="submit"
+              fullWidth
+              loading={loading}
+              loadingIndicator="Logging in..."
+              variant="contained"
+              sx={{
+                py: 1.2,
+                borderRadius: 2,
+                fontWeight: "bold",
+                backgroundColor: "#0d6efd",
+                "&:hover": { backgroundColor: "#0b5ed7" }
+              }}
+            >
+              Login
+            </LoadingButton>
 
-        </form>
-      </Paper>
-    </Box>
+          </form>
+        </Paper>
+      </Box>
 
-    <Toast toast={toast} closeToast={closeToast} />
-  </>
-);
+      <Toast toast={toast} closeToast={closeToast} />
+    </>
+  );
 
 };
 
