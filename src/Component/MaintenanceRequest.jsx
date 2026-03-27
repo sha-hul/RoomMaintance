@@ -333,7 +333,6 @@ const MaintenanceRequest = ({ employeeName, empId, contactNo }) => {
                         type="text"
                         className="form-control"
                         value={employeeName}
-                        disabled
                     />
                 </div>
 
@@ -344,7 +343,6 @@ const MaintenanceRequest = ({ employeeName, empId, contactNo }) => {
                         type="text"
                         className="form-control"
                         value={contactNo}
-                        disabled
                     />
                 </div>
 

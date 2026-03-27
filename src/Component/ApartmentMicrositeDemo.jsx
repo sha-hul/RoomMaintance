@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useLocation } from "react-router-dom";
 import {
   Box,
   Typography,
@@ -24,6 +25,11 @@ import {
   Slide,
 } from "@mui/material";
 import {
+  Email,
+  PauseCircle,
+  Cancel,
+  LightMode,
+  DarkMode,
   Business,
   LocationOn,
   Apartment,
@@ -49,9 +55,18 @@ import {
   CalendarMonth,
   ErrorOutline,
 } from "@mui/icons-material";
+import RaiseRequestModal from "./RaiseRequestModal";
+import StatusModal from "./StatusModal";
+import {
+  decryptParams,
+  getApartmentDetails,
+} from "../Service/apartmentmicrosite";
+import CircularProgress from "@mui/material/CircularProgress";
+import { DARK, LIGHT } from "../Common/palette";
 
 /* ─── palette ─────────────────────────────────────────────── */
-const P = {
+const Pl = {
+  //changed from P to Pl
   bg: "#060D1A",
   surface: "#0C1829",
   card: "#111F33",
@@ -68,83 +83,39 @@ const P = {
   sub: "#94A3B8",
 };
 
-/* ─── mock data ────────────────────────────────────────────── */
-const apt = {
-  facility: "Dammam",
-  location: "Mukthi Villa",
-  apartment: "12",
-  subscriptionId: "1001234567",
-  roomCount: 2,
-  amenities: [
-    { label: "Gym", icon: <FitnessCenter sx={{ fontSize: 15 }} /> },
-    { label: "Pool", icon: <Pool sx={{ fontSize: 15 }} /> },
-    // { label: "Spa",       icon: <Spa sx={{ fontSize: 15 }} /> },
-    // { label: "Parking",   icon: <LocalParking sx={{ fontSize: 15 }} /> },
-    // { label: "Wi-Fi",     icon: <Wifi sx={{ fontSize: 15 }} /> },
-    // { label: "AC",        icon: <AcUnit sx={{ fontSize: 15 }} /> },
-  ],
+const statusColor = (s) => {
+  switch (s) {
+    case "Pending":
+      return Pl.gold;
+    case "InProgress":
+      return Pl.teal;
+    case "OnHold":
+      return Pl.cyan;
+    case "Rejected":
+      return "#ef4444";
+    case "Closed":
+      return Pl.green;
+    default:
+      return Pl.muted;
+  }
 };
 
-const employee = {
-  name: "Rayan Al-Farsi",
-  id: "EMP-00487",
-  dept: "Engineering",
+const statusIcon = (s) => {
+  switch (s) {
+    case "Pending":
+      return <Schedule sx={{ fontSize: 14 }} />;
+    case "InProgress":
+      return <HourglassEmpty sx={{ fontSize: 14 }} />;
+    case "OnHold":
+      return <PauseCircle sx={{ fontSize: 14 }} />;
+    case "Rejected":
+      return <Cancel sx={{ fontSize: 14 }} />;
+    case "Closed":
+      return <CheckCircle sx={{ fontSize: 14 }} />;
+    default:
+      return <Schedule sx={{ fontSize: 14 }} />;
+  }
 };
-
-const REQUEST_TYPES = [
-  "Maintenance – Plumbing",
-  "Maintenance – Electrical",
-  "Maintenance – HVAC",
-  "Housekeeping",
-  "Internet / TV Issue",
-  "Furniture / Fixtures",
-  "Security Concern",
-  "Other",
-];
-
-const MOCK_STATUSES = [
-  {
-    id: "REQ-0041",
-    type: "Maintenance – HVAC",
-    date: "12 Mar 2026",
-    status: "In Progress",
-    step: 2,
-  },
-  {
-    id: "REQ-0038",
-    type: "Housekeeping",
-    date: "05 Mar 2026",
-    status: "Resolved",
-    step: 3,
-  },
-  {
-    id: "REQ-0029",
-    type: "Internet / TV Issue",
-    date: "18 Feb 2026",
-    status: "Pending",
-    step: 1,
-  },
-];
-
-const STEPS = ["Submitted", "Under Review", "In Progress", "Resolved"];
-
-const statusColor = (s) =>
-  s === "Resolved"
-    ? P.green
-    : s === "In Progress"
-      ? P.teal
-      : s === "Pending"
-        ? P.gold
-        : P.muted;
-
-const statusIcon = (s) =>
-  s === "Resolved" ? (
-    <CheckCircle sx={{ fontSize: 14 }} />
-  ) : s === "In Progress" ? (
-    <HourglassEmpty sx={{ fontSize: 14 }} />
-  ) : (
-    <Schedule sx={{ fontSize: 14 }} />
-  );
 
 /* ─── keyframe injection ───────────────────────────────────── */
 const injectStyles = () => {
@@ -169,6 +140,25 @@ const injectStyles = () => {
   document.head.appendChild(s);
 };
 
+function GradientCircularProgress() {
+  return (
+    <>
+      <svg width={0} height={0}>
+        <defs>
+          <linearGradient id="my_gradient" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" stopColor="#e01cd5" />
+            <stop offset="100%" stopColor="#1CB5E0" />
+          </linearGradient>
+        </defs>
+      </svg>
+
+      <CircularProgress
+        sx={{ "svg circle": { stroke: "url(#my_gradient)" } }}
+      />
+    </>
+  );
+}
+
 const StatusRow = React.memo(({ r, expanded, onToggle }) => {
   return (
     <Box
@@ -176,7 +166,7 @@ const StatusRow = React.memo(({ r, expanded, onToggle }) => {
         borderRadius: "12px",
         overflow: "hidden",
         border: `1px solid ${
-          expanded ? statusColor(r.status) + "66" : P.border
+          expanded ? statusColor(r.status) + "66" : Pl.border
         }`,
         transition: "border-color .2s",
       }}
@@ -188,7 +178,7 @@ const StatusRow = React.memo(({ r, expanded, onToggle }) => {
           cursor: "pointer",
           background: expanded
             ? `${statusColor(r.status)}10`
-            : `${P.surface}88`,
+            : `${Pl.surface}88`,
           display: "flex",
           alignItems: "center",
           gap: 1.5,
@@ -220,7 +210,7 @@ const StatusRow = React.memo(({ r, expanded, onToggle }) => {
             sx={{
               fontSize: "0.85rem",
               fontWeight: 700,
-              color: P.text,
+              color: Pl.text,
               fontFamily: "'DM Sans',sans-serif",
             }}
           >
@@ -228,10 +218,10 @@ const StatusRow = React.memo(({ r, expanded, onToggle }) => {
           </Typography>
 
           <Box sx={{ display: "flex", gap: 2, mt: 0.3 }}>
-            <Typography sx={{ fontSize: "0.65rem", color: P.muted }}>
+            <Typography sx={{ fontSize: "0.65rem", color: Pl.muted }}>
               {r.id}
             </Typography>
-            <Typography sx={{ fontSize: "0.65rem", color: P.muted }}>
+            <Typography sx={{ fontSize: "0.65rem", color: Pl.muted }}>
               <CalendarMonth sx={{ fontSize: 10, mr: 0.3 }} />
               {r.date}
             </Typography>
@@ -256,7 +246,7 @@ const StatusRow = React.memo(({ r, expanded, onToggle }) => {
           <KeyboardArrowDown
             sx={{
               fontSize: 18,
-              color: P.muted,
+              color: Pl.muted,
               transform: expanded ? "rotate(180deg)" : "none",
               transition: "transform .2s",
             }}
@@ -271,12 +261,11 @@ const StatusRow = React.memo(({ r, expanded, onToggle }) => {
 /*  MAIN COMPONENT                                             */
 /* ═══════════════════════════════════════════════════════════ */
 export default function ApartmentMicrosite() {
-  useEffect(injectStyles, []);
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
   const isTab = useMediaQuery(theme.breakpoints.between("sm", "md"));
-
-  const [raiseOpen, setRaiseOpen] = useState(false);
+  const location = useLocation();
+  const [data, setData] = useState(null);
   const [statusOpen, setStatusOpen] = useState(false);
   const [reqType, setReqType] = useState("");
   const [desc, setDesc] = useState("");
@@ -284,18 +273,153 @@ export default function ApartmentMicrosite() {
   const [submitted, setSubmitted] = useState(false);
   const [snack, setSnack] = useState(false);
   const [expanded, setExpanded] = useState(null);
+  //Theme
+  const [isDark, setIsDark] = useState(true);
+  const P = isDark ? DARK : LIGHT;
 
-  const handleSubmit = () => {
-    if (!reqType || !desc) return;
-    setSubmitted(true);
-    setTimeout(() => {
-      setRaiseOpen(false);
-      setSubmitted(false);
-      setReqType("");
-      setDesc("");
-      setSnack(true);
-    }, 1800);
+  //Raise Request
+  const [raiseOpen, setRaiseOpen] = useState(false);
+  const [categories, setCategories] = useState([]);
+
+  //GetSite Data #Shahul
+  const [apt, setApt] = useState({
+    facility: "",
+    location: "",
+    apartment: "",
+    subscriptionId: "",
+    roomCount: 0,
+    isActive: false,
+    amenities: [],
+  });
+
+  // Get Status Details #Shahul
+  const [statuses, setStatuses] = useState([]);
+
+  //pop up
+const [snackbar, setSnackbar] = useState({ open: false, message: "", severity: "error" });
+  // Amenity icon mapper
+  const getAmenityIcon = (name) => {
+    const map = {
+      Gym: <FitnessCenter sx={{ fontSize: 15 }} />,
+      Pool: <Pool sx={{ fontSize: 15 }} />,
+      Spa: <Spa sx={{ fontSize: 15 }} />,
+      Parking: <LocalParking sx={{ fontSize: 15 }} />,
+      "Wi-Fi": <Wifi sx={{ fontSize: 15 }} />,
+      AC: <AcUnit sx={{ fontSize: 15 }} />,
+    };
+    return map[name] || null;
   };
+
+  useEffect(() => {
+    // const fetchInitialData = async () => {
+    const fetchInitialData = () => {
+      try {
+        injectStyles();
+        // const resCat = await getCategories(); #Shahul
+        // setCategories(resCat.data);
+        setCategories([
+          { id: 1, name: "Electrical" },
+          { id: 2, name: "Plumbing" },
+          { id: 3, name: "Carpendry" },
+        ]);
+      } catch (error) {
+        console.error("Error fetching categories:", error);
+      }
+    };
+
+    fetchInitialData();
+  }, []);
+
+  // Run when URL params change
+  useEffect(() => {
+    debugger;
+    const fetchInitialDataByURL = async () => {
+      try {
+        const queryParams = new URLSearchParams(location.search);
+        const facid = queryParams.get("facid");
+        const locid = queryParams.get("locid");
+        const apartid = queryParams.get("apartid"); //#Shahul Need to change in Apartment Master
+
+        // if (!facid || !locid || !apartid) return; #Shahul
+
+        // const decrypted = await decryptParams(facid, locid, apartid);#Shahul
+        // setData(decrypted);
+
+        // Fetch apartment details by decrypted params //#Shahul
+        // const res = await getApartmentDetails(decrypted.facilityId, decrypted.locationId, decrypted.apartment);
+        // const data = res.data;
+        // setApt({
+        //   facility:       data.facilityName,
+        //   location:       data.locationName,
+        //   apartment:      data.apartment,
+        //   subscriptionId: data.subscriptionId,
+        //   roomCount:      data.roomCount,
+        //   isActive:       data.isActive ?? true,
+        //   amenities:      (data.amenities || []).map((name) => ({
+        //     label: name,
+        //     icon:  getAmenityIcon(name),
+        //   })),
+        // });
+
+        setApt({
+          facility: "Dammam",
+          location: "Mukthi Villa",
+          apartment: "12",
+          subscriptionId: "1001234567",
+          roomCount: 2,
+          amenities: [
+            { label: "Gym", icon: <FitnessCenter sx={{ fontSize: 15 }} /> },
+            { label: "Pool", icon: <Pool sx={{ fontSize: 15 }} /> },
+            // { label: "Spa",       icon: <Spa sx={{ fontSize: 15 }} /> },
+            // { label: "Parking",   icon: <LocalParking sx={{ fontSize: 15 }} /> },
+            // { label: "Wi-Fi",     icon: <Wifi sx={{ fontSize: 15 }} /> },
+            // { label: "AC",        icon: <AcUnit sx={{ fontSize: 15 }} /> },
+          ],
+        });
+
+        // Fetch apartment request details
+        // const resReq = await getApartmentRequestDetails(decrypted.facilityId, decrypted.locationId, decrypted.apartment);
+        // setStatuses(resReq.data); #Shahul
+        setStatuses([
+          {
+            id: "REQ-0041",
+            category: "Plumbing",
+            subCategory: "Broken Pipe",
+            date: "12 Mar 2026",
+            status: "InProgress",
+            step: 2,
+            description: "Water leaking from the kitchen sink pipe.",
+            adminRemarks: "Plumber assigned, will visit on 28th March.",
+          },
+          {
+            id: "REQ-0038",
+            category: "Electrical",
+            subCategory: "Light Fitting",
+            date: "05 Mar 2026",
+            status: "Closed",
+            description: "Bedroom light switch not working.",
+            adminRemarks: "Issue fixed closing the request",
+            step: 3,
+          },
+          {
+            id: "REQ-0029",
+            category: "Electrical",
+            subCategory: "Power Outage",
+            type: "Internet / TV Issue",
+            date: "18 Feb 2026",
+            status: "Pending",
+            description: "TV not working.",
+            adminRemarks: "",
+            step: 1,
+          },
+        ]);
+      } catch (error) {
+        console.error("Error decrypting params:", error);
+      }
+    };
+
+    fetchInitialDataByURL();
+  }, [location.search]);
 
   /* shared modal box */
   const ModalWrap = ({ children, open, onClose, wide }) => (
@@ -391,6 +515,21 @@ export default function ApartmentMicrosite() {
     </Box>
   );
 
+  // if (!data) #Shahul need to uncomment after the URLParam is fixed
+  //   return (
+  //     <Box
+  //       sx={{
+  //         height: "100vh",
+  //         display: "flex",
+  //         justifyContent: "center",
+  //         alignItems: "center",
+  //         backgroundColor: "#f9f9f9",
+  //       }}
+  //     >
+  //       <GradientCircularProgress />
+  //     </Box>
+  //   ); // loading state
+
   return (
     <Box
       sx={{
@@ -438,49 +577,6 @@ export default function ApartmentMicrosite() {
           }}
         />
       </Box>
-
-      {/* ── HEADER ── */}
-      {/* <Box sx={{
-        position: "relative", zIndex: 10,
-        background: `linear-gradient(180deg, ${P.surface} 0%, transparent 100%)`,
-        borderBottom: `1px solid ${P.border}66`,
-        px: { xs: 2.5, sm: 4, md: 6 }, py: 2,
-        display: "flex", alignItems: "center", justifyContent: "space-between",
-      }}>
-        <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
-          <Box sx={{
-            width: 36, height: 36, borderRadius: "8px",
-            background: `linear-gradient(135deg, ${P.teal}, ${P.cyan})`,
-            display: "flex", alignItems: "center", justifyContent: "center",
-          }}>
-            <Shield sx={{ fontSize: 18, color: P.bg }} />
-          </Box>
-          <Box>
-            <Typography sx={{ fontFamily: "'Syne',sans-serif", fontWeight: 800,
-              fontSize: "0.95rem", color: P.text, lineHeight: 1 }}>
-              StaffPortal
-            </Typography>
-            <Typography sx={{ fontSize: "0.6rem", color: P.teal, letterSpacing: "0.1em",
-              textTransform: "uppercase", fontFamily: "'DM Sans',sans-serif" }}>
-              Accommodation Hub
-            </Typography>
-          </Box>
-        </Box>
-        <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
-          <Box sx={{ textAlign: "right", display: { xs: "none", sm: "block" } }}>
-            <Typography sx={{ fontSize: "0.8rem", color: P.text, fontWeight: 600,
-              fontFamily: "'Syne',sans-serif" }}>{employee.name}</Typography>
-            <Typography sx={{ fontSize: "0.65rem", color: P.muted }}>{employee.id} · {employee.dept}</Typography>
-          </Box>
-          <Avatar sx={{
-            width: 36, height: 36, fontSize: "0.8rem", fontWeight: 700,
-            background: `linear-gradient(135deg, ${P.tealDim}, ${P.teal})`,
-            fontFamily: "'Syne',sans-serif",
-          }}>
-            {employee.name.split(" ").map(n => n[0]).join("")}
-          </Avatar>
-        </Box>
-      </Box> */}
 
       {/* ── HERO BANNER ── */}
       <Box
@@ -561,15 +657,23 @@ export default function ApartmentMicrosite() {
             >
               Your Apartment
             </Typography>
-            {/* <Typography sx={{
-              color: P.sub, fontSize: { xs: "0.8rem", sm: "0.9rem" },
-              mt: 0.5, fontFamily: "'DM Sans',sans-serif",
-            }}>
-              Unit assigned under <Box component="span" sx={{ color: P.teal, fontWeight: 600 }}>
-                {apt.subscriptionId}
-              </Box>
-            </Typography> */}
           </Box>
+          <IconButton
+            onClick={() => setIsDark((prev) => !prev)}
+            sx={{
+              color: P.muted,
+              border: `1px solid ${P.border}`,
+              borderRadius: "8px",
+              p: 0.8,
+              "&:hover": { color: P.text, borderColor: P.teal },
+            }}
+          >
+            {isDark ? (
+              <LightMode sx={{ fontSize: 18 }} />
+            ) : (
+              <DarkMode sx={{ fontSize: 18 }} />
+            )}
+          </IconButton>
           <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
             <Box sx={{ position: "relative" }}>
               <Box
@@ -577,27 +681,29 @@ export default function ApartmentMicrosite() {
                   width: 10,
                   height: 10,
                   borderRadius: "50%",
-                  bgcolor: P.green,
-                  "&::before": {
-                    content: '""',
-                    position: "absolute",
-                    inset: -3,
-                    borderRadius: "50%",
-                    border: `2px solid ${P.green}`,
-                    animation: "pulse-ring 1.8s ease-out infinite",
-                  },
+                  bgcolor: apt.isActive ? P.green : "#ef4444",
+                  "&::before": apt.isActive
+                    ? {
+                        content: '""',
+                        position: "absolute",
+                        inset: -3,
+                        borderRadius: "50%",
+                        border: `2px solid ${P.green}`,
+                        animation: "pulse-ring 1.8s ease-out infinite",
+                      }
+                    : {}, // no animation when inactive
                 }}
               />
             </Box>
             <Typography
               sx={{
                 fontSize: "0.75rem",
-                color: P.green,
+                color: apt.isActive ? P.green : "#ef4444",
                 fontFamily: "'DM Sans',sans-serif",
                 fontWeight: 600,
               }}
             >
-              Active
+              {apt.isActive ? "Active" : "Inactive"}
             </Typography>
           </Box>
         </Box>
@@ -657,7 +763,7 @@ export default function ApartmentMicrosite() {
               </Typography>
             </Box>
             <Chip
-              label="Verified"
+              label="Verified by Mouwasat"
               size="small"
               icon={
                 <Star
@@ -832,6 +938,7 @@ export default function ApartmentMicrosite() {
             >
               Raise Request
             </Button>
+            
             {/* <Button fullWidth onClick={() => setStatusOpen(true)}
               startIcon={<Schedule />}
               sx={{
@@ -890,9 +997,9 @@ export default function ApartmentMicrosite() {
               }}
             >
               {[
-                { label: "Total", val: 3, color: P.teal },
-                { label: "Active", val: 1, color: P.gold },
-                { label: "Resolved", val: 1, color: P.green },
+                { label: "Total", val: 3, color: P.teal }, //#Shahul Need to pass the Dynamic value
+                { label: "Active", val: 2, color: P.gold }, //#Shahul Need to pass the Dynamic value
+                { label: "Closed", val: 1, color: P.green }, //#Shahul Need to pass the Dynamic value
               ].map(({ label, val, color }) => (
                 <Box
                   key={label}
@@ -983,7 +1090,7 @@ export default function ApartmentMicrosite() {
               Latest Activity
             </Typography>
             <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
-              {MOCK_STATUSES.slice(0, 2).map((r) => (
+              {statuses.slice(0, 2).map((r) => (
                 <Box
                   key={r.id}
                   sx={{
@@ -1026,7 +1133,7 @@ export default function ApartmentMicrosite() {
                         textOverflow: "ellipsis",
                       }}
                     >
-                      {r.type}
+                      {`${r.category} - ${r.subCategory}`}
                     </Typography>
                     <Typography sx={{ fontSize: "0.65rem", color: P.muted }}>
                       {r.date}
@@ -1060,6 +1167,7 @@ export default function ApartmentMicrosite() {
               border: `1px solid ${P.teal}33`,
             }}
           >
+            {/* Decorative circle */}
             <Box
               sx={{
                 position: "absolute",
@@ -1071,6 +1179,7 @@ export default function ApartmentMicrosite() {
                 border: `1px solid ${P.teal}22`,
               }}
             />
+
             <Typography
               sx={{
                 fontFamily: "'Syne',sans-serif",
@@ -1082,6 +1191,7 @@ export default function ApartmentMicrosite() {
             >
               Need Help?
             </Typography>
+
             <Typography
               sx={{
                 fontSize: "0.75rem",
@@ -1093,16 +1203,54 @@ export default function ApartmentMicrosite() {
             >
               Support Service Desk for urgent issues.
             </Typography>
+
+            {/* Phone */}
             <Typography
               sx={{
                 fontSize: "0.78rem",
                 color: P.teal,
                 fontWeight: 600,
                 fontFamily: "'DM Sans',sans-serif",
+                mb: 1,
               }}
             >
               📞 +966 50505050
             </Typography>
+
+            {/* Divider */}
+            <Box sx={{ borderTop: `1px solid ${P.teal}22`, my: 1.5 }} />
+
+            {/* Issue note */}
+            <Typography
+              sx={{
+                fontSize: "0.72rem",
+                color: P.muted,
+                fontFamily: "'DM Sans',sans-serif",
+                lineHeight: 1.6,
+                mb: 1,
+              }}
+            >
+              Issue while raising the Maintenance Request?
+            </Typography>
+
+            {/* Mail link */}
+            <Box sx={{ display: "flex", alignItems: "center", gap: 0.8 }}>
+              <Email sx={{ fontSize: 14, color: P.teal }} />
+              <Typography
+                component="a"
+                href="mailto:ITService.mouwasat.com"
+                sx={{
+                  fontSize: "0.75rem",
+                  color: P.teal,
+                  fontWeight: 600,
+                  fontFamily: "'DM Sans',sans-serif",
+                  textDecoration: "none",
+                  "&:hover": { textDecoration: "underline" },
+                }}
+              >
+                ITService.mouwasat.com
+              </Typography>
+            </Box>
           </Box>
         </Box>
       </Box>
@@ -1137,389 +1285,27 @@ export default function ApartmentMicrosite() {
       {/* ══════════════════════════════════════════ */}
       {/*  RAISE REQUEST MODAL                       */}
       {/* ══════════════════════════════════════════ */}
-      <ModalWrap open={raiseOpen} onClose={() => setRaiseOpen(false)}>
-        {/* header */}
-        <Box
-          sx={{
-            px: 3,
-            py: 2.5,
-            borderBottom: `1px solid ${P.border}`,
-            background: `linear-gradient(135deg, ${P.teal}22, ${P.surface})`,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-          }}
-        >
-          <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
-            <Box
-              sx={{
-                width: 36,
-                height: 36,
-                borderRadius: "8px",
-                background: `linear-gradient(135deg, ${P.teal}, ${P.cyan})`,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-              }}
-            >
-              <NotificationsActive sx={{ fontSize: 18, color: P.bg }} />
-            </Box>
-            <Box>
-              <Typography
-                sx={{
-                  fontFamily: "'Syne',sans-serif",
-                  fontWeight: 700,
-                  fontSize: "1rem",
-                  color: P.text,
-                }}
-              >
-                Raise a Request
-              </Typography>
-              <Typography sx={{ fontSize: "0.65rem", color: P.muted }}>
-                Apartment {apt.apartment}
-              </Typography>
-            </Box>
-          </Box>
-          <IconButton
-            onClick={() => setRaiseOpen(false)}
-            sx={{ color: P.muted, "&:hover": { color: P.text } }}
-          >
-            <Close sx={{ fontSize: 18 }} />
-          </IconButton>
-        </Box>
-
-        {!submitted ? (
-          <Box
-            sx={{ p: 3, display: "flex", flexDirection: "column", gap: 2.5 }}
-          >
-            {/* type */}
-            <TextField
-              select
-              fullWidth
-              label="Request Type"
-              value={reqType}
-              onChange={(e) => setReqType(e.target.value)}
-              size="small"
-              sx={fieldSx}
-            >
-              {REQUEST_TYPES.map((t) => (
-                <MenuItem
-                  key={t}
-                  value={t}
-                  sx={{
-                    fontFamily: "'DM Sans',sans-serif",
-                    fontSize: "0.85rem",
-                    color: P.text,
-                    bgcolor: P.card,
-                    "&:hover": { bgcolor: `${P.teal}18` },
-                  }}
-                >
-                  {t}
-                </MenuItem>
-              ))}
-            </TextField>
-
-            {/* priority */}
-            <Box>
-              <Typography
-                sx={{
-                  fontSize: "0.72rem",
-                  color: P.muted,
-                  mb: 1,
-                  textTransform: "uppercase",
-                  letterSpacing: "0.1em",
-                  fontFamily: "'DM Sans',sans-serif",
-                  fontWeight: 600,
-                }}
-              >
-                Priority
-              </Typography>
-              <Box sx={{ display: "flex", gap: 1 }}>
-                {["Low", "Normal", "High", "Urgent"].map((p) => (
-                  <Box
-                    key={p}
-                    onClick={() => setPriority(p)}
-                    sx={{
-                      flex: 1,
-                      py: 0.9,
-                      borderRadius: "8px",
-                      textAlign: "center",
-                      cursor: "pointer",
-                      border: `1.5px solid`,
-                      borderColor: priority === p ? P.teal : P.border,
-                      bgcolor: priority === p ? `${P.teal}18` : "transparent",
-                      color: priority === p ? P.teal : P.muted,
-                      fontSize: "0.75rem",
-                      fontFamily: "'DM Sans',sans-serif",
-                      fontWeight: priority === p ? 700 : 400,
-                      transition: "all .15s",
-                    }}
-                  >
-                    {p}
-                  </Box>
-                ))}
-              </Box>
-            </Box>
-
-            {/* description */}
-            <TextField
-              fullWidth
-              multiline
-              rows={3}
-              label="Description"
-              placeholder="Describe the issue in detail…"
-              value={desc}
-              onChange={(e) => setDesc(e.target.value)}
-              sx={fieldSx}
+<RaiseRequestModal
+              open={raiseOpen}
+              onClose={() => setRaiseOpen(false)}
+              categories={categories}
+              apt={apt}
+              P={P}
+              ModalWrap={ModalWrap}
+              setSnackbar={setSnackbar}
             />
-
-            {/* info row */}
-            <Box
-              sx={{
-                p: 1.5,
-                borderRadius: "8px",
-                bgcolor: `${P.gold}10`,
-                border: `1px solid ${P.gold}33`,
-                display: "flex",
-                gap: 1.5,
-                alignItems: "flex-start",
-              }}
-            >
-              <ErrorOutline sx={{ fontSize: 16, color: P.gold, mt: "1px" }} />
-              <Typography
-                sx={{
-                  fontSize: "0.72rem",
-                  color: P.sub,
-                  fontFamily: "'DM Sans',sans-serif",
-                  lineHeight: 1.5,
-                }}
-              >
-                Requests are processed within 24 hours. Urgent requests are
-                escalated immediately.
-              </Typography>
-            </Box>
-
-            <Button
-              fullWidth
-              onClick={handleSubmit}
-              disabled={!reqType || !desc}
-              endIcon={<Send sx={{ fontSize: 16 }} />}
-              sx={{
-                background:
-                  !reqType || !desc
-                    ? `${P.border}`
-                    : `linear-gradient(135deg, ${P.teal}, ${P.cyan})`,
-                color: !reqType || !desc ? P.muted : P.bg,
-                fontFamily: "'Syne',sans-serif",
-                fontWeight: 700,
-                fontSize: "0.9rem",
-                textTransform: "none",
-                borderRadius: "10px",
-                py: 1.5,
-                boxShadow:
-                  !reqType || !desc ? "none" : `0 8px 24px ${P.teal}44`,
-                transition: "all .25s",
-              }}
-            >
-              Submit Request
-            </Button>
-          </Box>
-        ) : (
-          <Box sx={{ p: 4, textAlign: "center" }}>
-            <Box
-              sx={{
-                width: 72,
-                height: 72,
-                borderRadius: "50%",
-                mx: "auto",
-                mb: 2,
-                background: `${P.green}22`,
-                border: `2px solid ${P.green}`,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-              }}
-            >
-              <CheckCircle sx={{ fontSize: 36, color: P.green }} />
-            </Box>
-            <Typography
-              sx={{
-                fontFamily: "'Syne',sans-serif",
-                fontWeight: 800,
-                fontSize: "1.2rem",
-                color: P.text,
-                mb: 1,
-              }}
-            >
-              Request Submitted!
-            </Typography>
-            <Typography
-              sx={{
-                fontSize: "0.82rem",
-                color: P.sub,
-                fontFamily: "'DM Sans',sans-serif",
-              }}
-            >
-              You'll receive a confirmation shortly. Track it under Status.
-            </Typography>
-          </Box>
-        )}
-      </ModalWrap>
-
       {/* ══════════════════════════════════════════ */}
       {/*  STATUS MODAL                              */}
       {/* ══════════════════════════════════════════ */}
-      <ModalWrap open={statusOpen} onClose={() => setStatusOpen(false)} wide>
-        {/* header */}
-        <Box
-          sx={{
-            px: 3,
-            py: 2.5,
-            borderBottom: `1px solid ${P.border}`,
-            background: `linear-gradient(135deg, ${P.gold}18, ${P.surface})`,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-          }}
-        >
-          <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
-            <Box
-              sx={{
-                width: 36,
-                height: 36,
-                borderRadius: "8px",
-                background: `linear-gradient(135deg, ${P.gold}, ${P.goldDim})`,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-              }}
-            >
-              <Schedule sx={{ fontSize: 18, color: P.bg }} />
-            </Box>
-            <Box>
-              <Typography
-                sx={{
-                  fontFamily: "'Syne',sans-serif",
-                  fontWeight: 700,
-                  fontSize: "1rem",
-                  color: P.text,
-                }}
-              >
-                Request Status
-              </Typography>
-              <Typography sx={{ fontSize: "0.65rem", color: P.muted }}>
-                {MOCK_STATUSES.length} requests found
-              </Typography>
-            </Box>
-          </Box>
-          <IconButton
-            onClick={() => setStatusOpen(false)}
-            sx={{ color: P.muted, "&:hover": { color: P.text } }}
-          >
-            <Close sx={{ fontSize: 18 }} />
-          </IconButton>
-        </Box>
-
-        <Box sx={{ p: 3, display: "flex", flexDirection: "column", gap: 2 }}>
-          {/* {MOCK_STATUSES.map((r) => (
-            <Box key={r.id} sx={{
-              borderRadius: "12px", overflow: "hidden",
-              border: `1px solid ${expanded === r.id ? statusColor(r.status) + "66" : P.border}`,
-              transition: "border-color .2s",
-            }}> */}
-          {/* row header */}
-          {/* <Box onClick={() => setExpanded(expanded === r.id ? null : r.id)}
-                sx={{
-                  p: "12px 16px", cursor: "pointer",
-                  background: expanded === r.id
-                    ? `${statusColor(r.status)}10`
-                    : `${P.surface}88`,
-                  display: "flex", alignItems: "center", gap: 1.5,
-                  "&:hover": { background: `${statusColor(r.status)}08` },
-                  transition: "background .2s",
-                }}>
-                <Box sx={{
-                  width: 32, height: 32, borderRadius: "8px", flexShrink: 0,
-                  background: `${statusColor(r.status)}18`,
-                  border: `1px solid ${statusColor(r.status)}44`,
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                  color: statusColor(r.status),
-                }}>
-                  {statusIcon(r.status)}
-                </Box>
-                <Box sx={{ flex: 1, minWidth: 0 }}>
-                  <Typography sx={{ fontSize: "0.85rem", fontWeight: 700, color: P.text,
-                    fontFamily: "'DM Sans',sans-serif" }}>{r.type}</Typography>
-                  <Box sx={{ display: "flex", gap: 2, mt: 0.3 }}>
-                    <Typography sx={{ fontSize: "0.65rem", color: P.muted }}>{r.id}</Typography>
-                    <Typography sx={{ fontSize: "0.65rem", color: P.muted }}>
-                      <CalendarMonth sx={{ fontSize: 10, mr: 0.3 }} />{r.date}
-                    </Typography>
-                  </Box>
-                </Box>
-                <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                  <Chip label={r.status} size="small"
-                    sx={{ bgcolor: `${statusColor(r.status)}18`, color: statusColor(r.status),
-                      border: `1px solid ${statusColor(r.status)}44`,
-                      fontSize: "0.65rem", height: 22, fontFamily: "'DM Sans',sans-serif" }} />
-                  <KeyboardArrowDown sx={{
-                    fontSize: 18, color: P.muted,
-                    transform: expanded === r.id ? "rotate(180deg)" : "none",
-                    transition: "transform .2s",
-                  }} />
-                </Box>
-              </Box> */}
-
-          {/* expandable stepper */}
-          {/* {expanded === r.id && (
-                <Fade in>
-                  <Box sx={{ px: 2.5, py: 2, borderTop: `1px solid ${P.border}55`,
-                    background: `${P.bg}66` }}>
-                    <Stepper activeStep={r.step - 1} orientation="horizontal" alternativeLabel
-                      sx={{
-                        "& .MuiStepLabel-label": {
-                          fontFamily: "'DM Sans',sans-serif", fontSize: "0.65rem", color: P.muted,
-                          "&.Mui-active": { color: P.teal, fontWeight: 700 },
-                          "&.Mui-completed": { color: P.green },
-                        },
-                        "& .MuiStepIcon-root": { color: P.border, fontSize: "1.1rem" },
-                        "& .MuiStepIcon-root.Mui-active": { color: P.teal },
-                        "& .MuiStepIcon-root.Mui-completed": { color: P.green },
-                        "& .MuiStepConnector-line": { borderColor: P.border },
-                      }}>
-                      {STEPS.map((s) => (
-                        <Step key={s}><StepLabel>{s}</StepLabel></Step>
-                      ))}
-                    </Stepper>
-                    <LinearProgress variant="determinate"
-                      value={(r.step / STEPS.length) * 100}
-                      sx={{
-                        mt: 2, height: 4, borderRadius: 4, bgcolor: P.border,
-                        "& .MuiLinearProgress-bar": {
-                          background: `linear-gradient(90deg, ${P.teal}, ${P.green})`,
-                          borderRadius: 4,
-                        },
-                      }} />
-                    <Typography sx={{ fontSize: "0.65rem", color: P.muted, mt: 0.8,
-                      textAlign: "right", fontFamily: "'DM Sans',sans-serif" }}>
-                      {Math.round((r.step / STEPS.length) * 100)}% complete
-                    </Typography>
-                  </Box>
-                </Fade>
-              )} */}
-          {/* </Box>
-          ))} */}
-          {/* {MOCK_STATUSES.map((r) => (
-            <StatusRow
-              key={r.id}
-              r={r}
-              expanded={expanded === r.id}
-              onToggle={(id) => setExpanded(expanded === id ? null : id)}
-            />
-          ))} */}
-        </Box>
-      </ModalWrap>
-
+      <StatusModal
+        open={statusOpen}
+        onClose={() => setStatusOpen(false)}
+        requests={statuses}
+        statusColor={statusColor}
+        statusIcon={statusIcon}
+        ModalWrap={ModalWrap}
+        P={P}
+      />
       {/* ── snack ── */}
       <Snackbar
         open={snack}
@@ -1541,27 +1327,30 @@ export default function ApartmentMicrosite() {
           Request submitted successfully! We'll be in touch soon.
         </Alert>
       </Snackbar>
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={3000}
+        onClose={() => setSnackbar((prev) => ({ ...prev, open: false }))}
+        anchorOrigin={{ vertical: "top", horizontal: "center" }}
+      >
+        <Alert
+          onClose={() => setSnackbar((prev) => ({ ...prev, open: false }))}
+          severity={snackbar.severity}
+          sx={{
+            fontFamily: "'DM Sans',sans-serif",
+            fontSize: "0.85rem",
+            bgcolor:
+              snackbar.severity === "success" ? `${P.green}18` : "#ef444418",
+            color: snackbar.severity === "success" ? P.green : "#ef4444",
+            border: `1px solid ${snackbar.severity === "success" ? P.green : "#ef4444"}44`,
+            "& .MuiAlert-icon": {
+              color: snackbar.severity === "success" ? P.green : "#ef4444",
+            },
+          }}
+        >
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 }
-
-/* ── shared text field styles ── */
-const fieldSx = {
-  "& .MuiInputBase-root": {
-    bgcolor: `#060D1A`,
-    borderRadius: "8px",
-    fontFamily: "'DM Sans',sans-serif",
-    fontSize: "0.88rem",
-    color: "#E2EAF4",
-  },
-  "& .MuiOutlinedInput-notchedOutline": { borderColor: "#1E3250" },
-  "&:hover .MuiOutlinedInput-notchedOutline": { borderColor: "#0EA5E9" },
-  "& .Mui-focused .MuiOutlinedInput-notchedOutline": { borderColor: "#0EA5E9" },
-  "& .MuiInputLabel-root": {
-    color: "#64748B",
-    fontFamily: "'DM Sans',sans-serif",
-    fontSize: "0.85rem",
-  },
-  "& .MuiInputLabel-root.Mui-focused": { color: "#0EA5E9" },
-  "& .MuiSelect-icon": { color: "#64748B" },
-};

@@ -1,0 +1,39 @@
+Mar-28
+
+Create API Method for ApartmentMicrositeDemo
+->getApartmentDetails = (facilityId, locationId, apartmentID)
+ response : {
+    facility: "",
+    location: "",
+    apartment: "",
+    subscriptionId: "",
+    roomCount: 0,
+    isActive: false,
+    amenities: [],
+  }
+
+->getApartmentRequestDetails(decrypted.facilityId, decrypted.locationId, decrypted.apartmentID);
+response : {
+          id: "REQ-0038",
+          category: "Electrical",
+          subCategory: "Light Fitting",
+          date: "05 Mar 2026",
+          status: "Closed",
+          description: "Bedroom light switch not working.",
+          adminRemarks: "Issue fixed closing the request",
+          step: 3,
+        }
+
+->submitMaintenanceRequest(payload)
+ const payload = {
+        // From form state
+        category: Number(form.category),
+        subCategory: Number(form.subCategory),
+        description: form.description,
+        attachment: form.attachment ? form.attachment.name : null,
+        employeeName: form.employeeName,
+        contactNo: form.contactNo,
+        facility: apt.facility,
+        location: apt.location,
+        apartment: apt.apartment,
+      };
