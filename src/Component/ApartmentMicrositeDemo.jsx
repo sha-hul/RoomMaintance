@@ -59,11 +59,13 @@ import RaiseRequestModal from "./RaiseRequestModal";
 import StatusModal from "./StatusModal";
 import {
   decryptParams,
-  getApartmentDetails,
-} from "../Service/apartmentmicrosite";
+  getApartmentDetails,getApartmentRequestDetails
+} from "../Service/apartmentmicrositeService";
 import CircularProgress from "@mui/material/CircularProgress";
 import { DARK, LIGHT } from "../Common/palette";
-
+import {
+  getCategories
+} from "../Service/maintenanceService";
 /* ─── palette ─────────────────────────────────────────────── */
 const Pl = {
   //changed from P to Pl
@@ -165,9 +167,8 @@ const StatusRow = React.memo(({ r, expanded, onToggle }) => {
       sx={{
         borderRadius: "12px",
         overflow: "hidden",
-        border: `1px solid ${
-          expanded ? statusColor(r.status) + "66" : Pl.border
-        }`,
+        border: `1px solid ${expanded ? statusColor(r.status) + "66" : Pl.border
+          }`,
         transition: "border-color .2s",
       }}
     >
@@ -296,7 +297,7 @@ export default function ApartmentMicrosite() {
   const [statuses, setStatuses] = useState([]);
 
   //pop up
-const [snackbar, setSnackbar] = useState({ open: false, message: "", severity: "error" });
+  const [snackbar, setSnackbar] = useState({ open: false, message: "", severity: "error" });
   // Amenity icon mapper
   const getAmenityIcon = (name) => {
     const map = {
@@ -311,17 +312,11 @@ const [snackbar, setSnackbar] = useState({ open: false, message: "", severity: "
   };
 
   useEffect(() => {
-    // const fetchInitialData = async () => {
-    const fetchInitialData = () => {
+    const fetchInitialData = async () => {
       try {
         injectStyles();
-        // const resCat = await getCategories(); #Shahul
-        // setCategories(resCat.data);
-        setCategories([
-          { id: 1, name: "Electrical" },
-          { id: 2, name: "Plumbing" },
-          { id: 3, name: "Carpendry" },
-        ]);
+        const resCat = await getCategories();
+        setCategories(resCat.data);
       } catch (error) {
         console.error("Error fetching categories:", error);
       }
@@ -332,87 +327,88 @@ const [snackbar, setSnackbar] = useState({ open: false, message: "", severity: "
 
   // Run when URL params change
   useEffect(() => {
-    debugger;
+    
     const fetchInitialDataByURL = async () => {
+      debugger;
       try {
         const queryParams = new URLSearchParams(location.search);
         const facid = queryParams.get("facid");
         const locid = queryParams.get("locid");
-        const apartid = queryParams.get("apartid"); //#Shahul Need to change in Apartment Master
+        const apartid = queryParams.get("apart"); //#Shahul Need to change in Apartment Master
 
-        // if (!facid || !locid || !apartid) return; #Shahul
+        if (!facid || !locid || !apartid) return;
 
-        // const decrypted = await decryptParams(facid, locid, apartid);#Shahul
-        // setData(decrypted);
+        const decrypted = await decryptParams(facid, locid, apartid);
+        setData(decrypted);
 
         // Fetch apartment details by decrypted params //#Shahul
-        // const res = await getApartmentDetails(decrypted.facilityId, decrypted.locationId, decrypted.apartment);
-        // const data = res.data;
-        // setApt({
-        //   facility:       data.facilityName,
-        //   location:       data.locationName,
-        //   apartment:      data.apartment,
-        //   subscriptionId: data.subscriptionId,
-        //   roomCount:      data.roomCount,
-        //   isActive:       data.isActive ?? true,
-        //   amenities:      (data.amenities || []).map((name) => ({
-        //     label: name,
-        //     icon:  getAmenityIcon(name),
-        //   })),
-        // });
-
+        const res = await getApartmentDetails(decrypted.facilityId, decrypted.locationId, decrypted.apartment);
+        const data = res.data;
         setApt({
-          facility: "Dammam",
-          location: "Mukthi Villa",
-          apartment: "12",
-          subscriptionId: "1001234567",
-          roomCount: 2,
-          amenities: [
-            { label: "Gym", icon: <FitnessCenter sx={{ fontSize: 15 }} /> },
-            { label: "Pool", icon: <Pool sx={{ fontSize: 15 }} /> },
-            // { label: "Spa",       icon: <Spa sx={{ fontSize: 15 }} /> },
-            // { label: "Parking",   icon: <LocalParking sx={{ fontSize: 15 }} /> },
-            // { label: "Wi-Fi",     icon: <Wifi sx={{ fontSize: 15 }} /> },
-            // { label: "AC",        icon: <AcUnit sx={{ fontSize: 15 }} /> },
-          ],
+          facility: data.facilityName,
+          location: data.locationName,
+          apartment: data.apartment,
+          subscriptionId: data.subscriptionId,
+          roomCount: data.roomCount,
+          isActive: data.isActive ?? true,
+          amenities: (data.amenities || []).map((name) => ({
+            label: name,
+            icon: getAmenityIcon(name),
+          })),
         });
 
+        // setApt({
+        //   facility: "Dammam",
+        //   location: "Mukthi Villa",
+        //   apartment: "12",
+        //   subscriptionId: "1001234567",
+        //   roomCount: 2,
+        //   amenities: [
+        //     { label: "Gym", icon: <FitnessCenter sx={{ fontSize: 15 }} /> },
+        //     { label: "Pool", icon: <Pool sx={{ fontSize: 15 }} /> },
+        //     // { label: "Spa",       icon: <Spa sx={{ fontSize: 15 }} /> },
+        //     // { label: "Parking",   icon: <LocalParking sx={{ fontSize: 15 }} /> },
+        //     // { label: "Wi-Fi",     icon: <Wifi sx={{ fontSize: 15 }} /> },
+        //     // { label: "AC",        icon: <AcUnit sx={{ fontSize: 15 }} /> },
+        //   ],
+        // });
+
         // Fetch apartment request details
-        // const resReq = await getApartmentRequestDetails(decrypted.facilityId, decrypted.locationId, decrypted.apartment);
-        // setStatuses(resReq.data); #Shahul
-        setStatuses([
-          {
-            id: "REQ-0041",
-            category: "Plumbing",
-            subCategory: "Broken Pipe",
-            date: "12 Mar 2026",
-            status: "InProgress",
-            step: 2,
-            description: "Water leaking from the kitchen sink pipe.",
-            adminRemarks: "Plumber assigned, will visit on 28th March.",
-          },
-          {
-            id: "REQ-0038",
-            category: "Electrical",
-            subCategory: "Light Fitting",
-            date: "05 Mar 2026",
-            status: "Closed",
-            description: "Bedroom light switch not working.",
-            adminRemarks: "Issue fixed closing the request",
-            step: 3,
-          },
-          {
-            id: "REQ-0029",
-            category: "Electrical",
-            subCategory: "Power Outage",
-            type: "Internet / TV Issue",
-            date: "18 Feb 2026",
-            status: "Pending",
-            description: "TV not working.",
-            adminRemarks: "",
-            step: 1,
-          },
-        ]);
+        const resReq = await getApartmentRequestDetails(decrypted.apartment);
+        setStatuses(resReq.data);
+        // setStatuses([
+        //   {
+        //     id: "REQ-0041",
+        //     category: "Plumbing",
+        //     subCategory: "Broken Pipe",
+        //     date: "12 Mar 2026",
+        //     status: "InProgress",
+        //     step: 2,
+        //     description: "Water leaking from the kitchen sink pipe.",
+        //     adminRemarks: "Plumber assigned, will visit on 28th March.",
+        //   },
+        //   {
+        //     id: "REQ-0038",
+        //     category: "Electrical",
+        //     subCategory: "Light Fitting",
+        //     date: "05 Mar 2026",
+        //     status: "Closed",
+        //     description: "Bedroom light switch not working.",
+        //     adminRemarks: "Issue fixed closing the request",
+        //     step: 3,
+        //   },
+        //   {
+        //     id: "REQ-0029",
+        //     category: "Electrical",
+        //     subCategory: "Power Outage",
+        //     type: "Internet / TV Issue",
+        //     date: "18 Feb 2026",
+        //     status: "Pending",
+        //     description: "TV not working.",
+        //     adminRemarks: "",
+        //     step: 1,
+        //   },
+        // ]);
       } catch (error) {
         console.error("Error decrypting params:", error);
       }
@@ -515,20 +511,20 @@ const [snackbar, setSnackbar] = useState({ open: false, message: "", severity: "
     </Box>
   );
 
-  // if (!data) #Shahul need to uncomment after the URLParam is fixed
-  //   return (
-  //     <Box
-  //       sx={{
-  //         height: "100vh",
-  //         display: "flex",
-  //         justifyContent: "center",
-  //         alignItems: "center",
-  //         backgroundColor: "#f9f9f9",
-  //       }}
-  //     >
-  //       <GradientCircularProgress />
-  //     </Box>
-  //   ); // loading state
+  if (!data)
+    return (
+      <Box
+        sx={{
+          height: "100vh",
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          backgroundColor: "#f9f9f9",
+        }}
+      >
+        <GradientCircularProgress />
+      </Box>
+    ); // loading state
 
   return (
     <Box
@@ -684,13 +680,13 @@ const [snackbar, setSnackbar] = useState({ open: false, message: "", severity: "
                   bgcolor: apt.isActive ? P.green : "#ef4444",
                   "&::before": apt.isActive
                     ? {
-                        content: '""',
-                        position: "absolute",
-                        inset: -3,
-                        borderRadius: "50%",
-                        border: `2px solid ${P.green}`,
-                        animation: "pulse-ring 1.8s ease-out infinite",
-                      }
+                      content: '""',
+                      position: "absolute",
+                      inset: -3,
+                      borderRadius: "50%",
+                      border: `2px solid ${P.green}`,
+                      animation: "pulse-ring 1.8s ease-out infinite",
+                    }
                     : {}, // no animation when inactive
                 }}
               />
@@ -938,7 +934,7 @@ const [snackbar, setSnackbar] = useState({ open: false, message: "", severity: "
             >
               Raise Request
             </Button>
-            
+
             {/* <Button fullWidth onClick={() => setStatusOpen(true)}
               startIcon={<Schedule />}
               sx={{
@@ -1285,15 +1281,15 @@ const [snackbar, setSnackbar] = useState({ open: false, message: "", severity: "
       {/* ══════════════════════════════════════════ */}
       {/*  RAISE REQUEST MODAL                       */}
       {/* ══════════════════════════════════════════ */}
-<RaiseRequestModal
-              open={raiseOpen}
-              onClose={() => setRaiseOpen(false)}
-              categories={categories}
-              apt={apt}
-              P={P}
-              ModalWrap={ModalWrap}
-              setSnackbar={setSnackbar}
-            />
+      <RaiseRequestModal
+        open={raiseOpen}
+        onClose={() => setRaiseOpen(false)}
+        categories={categories}
+        apt={apt}
+        P={P}
+        ModalWrap={ModalWrap}
+        setSnackbar={setSnackbar}
+      />
       {/* ══════════════════════════════════════════ */}
       {/*  STATUS MODAL                              */}
       {/* ══════════════════════════════════════════ */}

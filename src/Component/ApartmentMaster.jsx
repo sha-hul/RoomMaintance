@@ -205,9 +205,9 @@ const ApartmentMaster = () => {
     const payloadURL = {
       facid: item.facilityId,
       locid: item.locationId,
-      apart: item.apartmentName
+      apart: item.id
     };
-    let url = await getEncryptUrl(payloadURL); //create the react method and also the c# method
+    let url = await getEncryptUrl(payloadURL);
     setQrUrl(url);
     setQRModalOpen(true);
   };

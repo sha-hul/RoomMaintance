@@ -1,11 +1,11 @@
-import { useState, createContext, useContext } from "react";
+import { useState, createContext, useContext, useEffect } from "react";
 import {
     Box, List, ListItem, ListItemIcon, ListItemText,
     IconButton, Avatar, Typography, Tooltip, Divider,
 } from "@mui/material";
 import {
     ChevronLeft, ChevronRight, MoreVert,
-    Dashboard, BarChart, HomeWork, AddAlert, MenuBook,Assessment
+    Dashboard, BarChart, HomeWork, AddAlert, MenuBook, Assessment
 } from "@mui/icons-material";
 import { useLocation, useNavigate } from "react-router-dom";
 
@@ -32,6 +32,7 @@ function SidebarItem({ icon, text, path }) {
     const navigate = useNavigate();
     const location = useLocation();
     const active = location.pathname.startsWith(path);
+    
 
     return (
         <Tooltip title={expanded ? "" : text} placement="right" arrow>
@@ -100,7 +101,22 @@ function SidebarItem({ icon, text, path }) {
 /* ═══════════════════════════════════════════════════════ */
 export default function Sidebar() {
     const [expanded, setExpanded] = useState(true);
+    const [userDetail, setUserdetail] = useState({
+        empId: "",
+        name: "",
+        role: "",
+        mail: ""
+    });
 
+    useEffect(() => {
+        const user = JSON.parse(sessionStorage.getItem("user"));
+        setUserdetail({
+            empId: user.empId,
+            name: user.name,
+            role: user.role,
+            mail: user.mail
+        })
+    }, [])
     return (
         <SidebarContext.Provider value={{ expanded }}>
             <Box
@@ -133,7 +149,7 @@ export default function Sidebar() {
                         <Typography
                             sx={{
                                 fontSize: "1.3rem",
-                                fontWeight:700,
+                                fontWeight: 700,
                                 background: "linear-gradient(135deg, #3365c2, #1041a8d7)",
                                 WebkitBackgroundClip: "text",
                                 WebkitTextFillColor: "transparent",
@@ -177,8 +193,9 @@ export default function Sidebar() {
                     minHeight: 64,
                 }}>
                     <Avatar
-                        src="https://ui-avatars.com/api/?background=5c6bc0&color=FFFFFF&bold=true&name=John+Doe"
+                        src={`https://ui-avatars.com/api/?background=5c6bc0&color=FFFFFF&bold=true&name=${userDetail.name}`}
                         sx={{ width: 38, height: 38, borderRadius: "8px", flexShrink: 0 }}
+                        alt={userDetail.name}
                     />
                     <Box sx={{
                         overflow: "hidden",
@@ -192,23 +209,23 @@ export default function Sidebar() {
                             color: "#1a1a1a", lineHeight: 1.3,
                             fontFamily: "'Outfit','Roboto',sans-serif"
                         }}>
-                            John Doe
+                            {userDetail.name}
                         </Typography>
                         <Typography sx={{
                             fontSize: "0.7rem", color: "#888",
                             fontFamily: "'Outfit','Roboto',sans-serif"
                         }}>
-                            johndoe@gmail.com
+                            {userDetail.mail}
                         </Typography>
                     </Box>
-                    {expanded && (
+                    {/* {expanded && (
                         <IconButton size="small" sx={{
                             ml: "auto", color: "#aaa",
                             "&:hover": { color: VOILET }
                         }}>
                             <MoreVert fontSize="small" />
                         </IconButton>
-                    )}
+                    )} */}
                 </Box>
             </Box>
         </SidebarContext.Provider>

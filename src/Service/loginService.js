@@ -15,8 +15,9 @@ export const UserLogin = async (empId, password) => {
     });
     sessionStorage.setItem("user", JSON.stringify({
         empId: res.data.empId,
-        name: res.data.name,
-        role: res.data.role
+        name: res.data.empName,
+        role: res.data.role,
+        mail: res.data.mail,
     }));
 
     return res;

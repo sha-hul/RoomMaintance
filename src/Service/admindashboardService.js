@@ -8,9 +8,12 @@ const API_URL_AdminDashboard = API_BASE + "/api/AdminDashboard";
 
 export const getRequestdetails = () => {
     const empId = getEmpId();
-    console.log(`${API_URL_AdminDashboard}/getRequestdetails`);
     return axios.get(`${API_URL_AdminDashboard}/getRequestdetails`, {
         params: { empId },
         withCredentials: true
     });
+};
+
+export const updateAction = async (data) => {
+    return axios.post(`${API_URL_AdminDashboard}/updateAction`, data);
 };

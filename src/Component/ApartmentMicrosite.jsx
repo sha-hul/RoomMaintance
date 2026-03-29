@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
-import { decryptParams } from "../Service/apartmentmicrosite"
+import { decryptParams } from "../Service/apartmentmicrositeService"
 
 const ApartmentMicrosite = () => {
     const location = useLocation();
@@ -13,6 +13,7 @@ const ApartmentMicrosite = () => {
     const apart = queryParams.get("apart");
 
     useEffect(() => {
+        debugger;
         const decryptParam = async () => {
             const result = await decryptParams(facid, locid, apart);
             setData(result);

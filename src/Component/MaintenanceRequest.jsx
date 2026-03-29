@@ -14,8 +14,7 @@ import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import HighlightOffIcon from "@mui/icons-material/HighlightOff";
 import { useNavigate } from "react-router-dom";
 
-const MaintenanceRequest = ({ employeeName, empId, contactNo }) => {
-
+const MaintenanceRequest = ({ contactNo }) => {
     const [form, setForm] = useState({
         facility: "",
         location: "",
@@ -24,11 +23,10 @@ const MaintenanceRequest = ({ employeeName, empId, contactNo }) => {
         subCategory: "",
         description: "",
         attachment: "",
-        statusId: 1,
-        updatedBy: "user",
-        employeeName,
-        empId,
-        contactNo
+        employeeName: "",
+        contactNo,
+        updatedBy: "admin",
+        empId: "",
     }
     );
 
@@ -47,6 +45,13 @@ const MaintenanceRequest = ({ employeeName, empId, contactNo }) => {
 
     //Onload
     useEffect(() => {
+        debugger;
+        const user = JSON.parse(sessionStorage.getItem("user"));
+        setForm(prev => ({
+            ...prev,
+            employeeName: user.name,
+            empId:user.empId
+        }));
         const fetchDropdowns = async () => {
             try {
                 const resFac = await getFacilities();
@@ -60,6 +65,7 @@ const MaintenanceRequest = ({ employeeName, empId, contactNo }) => {
         };
 
         fetchDropdowns();
+        
     }, []);
 
     // Fetch locations when facility changes
@@ -203,7 +209,7 @@ const MaintenanceRequest = ({ employeeName, empId, contactNo }) => {
             setSuccessModal(true);
 
             setTimeout(() => {
-                navigate("/empdashboard");
+                navigate("/admindashboard");
             }, 2000);
 
         } catch (error) {
@@ -332,7 +338,8 @@ const MaintenanceRequest = ({ employeeName, empId, contactNo }) => {
                     <input
                         type="text"
                         className="form-control"
-                        value={employeeName}
+                        value={form.employeeName}
+                        disabled
                     />
                 </div>
 
@@ -343,6 +350,7 @@ const MaintenanceRequest = ({ employeeName, empId, contactNo }) => {
                         type="text"
                         className="form-control"
                         value={contactNo}
+                        disabled
                     />
                 </div>
 
