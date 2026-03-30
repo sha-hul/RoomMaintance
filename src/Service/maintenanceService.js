@@ -32,6 +32,5 @@ export const getSubCategoriesByCategory = (categoryId) =>
 // ---------------------Request Submission ---------------------
 
 export const submitMaintenanceRequest = async (data) => {
-  console.log(data);
   return axiosInstance.post(`${API_URL_Request}/SubmitRequest`, data);
 };

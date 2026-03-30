@@ -57,15 +57,20 @@ import {
   getSubCategoriesByCategory,
   submitMaintenanceRequest,
 } from "../Service/maintenanceService";
-
+import {
+  decryptParams,
+  getApartmentDetails, getApartmentRequestDetails
+} from "../Service/apartmentmicrositeService";
 export default function RaiseRequestModal({
   open,
   onClose,
   apt,
   categories,
   P,
+  data,
   ModalWrap,
   setSnackbar,
+  setStatuses
 }) {
   const [form, setForm] = useState({
     category: 0,
@@ -74,37 +79,14 @@ export default function RaiseRequestModal({
     attachment: null,
     employeeName: "",
     contactNo: "",
+    updatedBy: "user",
+    empId: "1111",
   });
   const [submitted, setSubmitted] = useState(false);
   const [subCategories, setSubCategories] = useState([]);
-  const mockSubCategories = {
-    1: [
-      // Electrical
-      { id: 101, name: "Wiring Issue" },
-      { id: 102, name: "Power Outage" },
-      { id: 103, name: "Light Fitting" },
-      { id: 104, name: "Switch / Socket Repair" },
-      { id: 105, name: "Circuit Breaker" },
-    ],
-    2: [
-      // Plumbing
-      { id: 201, name: "Pipe Leakage" },
-      { id: 202, name: "Drain Blockage" },
-      { id: 203, name: "Water Heater" },
-      { id: 204, name: "Tap / Faucet Repair" },
-      { id: 205, name: "Toilet Flush Issue" },
-    ],
-    3: [
-      // Carpentry
-      { id: 301, name: "Door Repair" },
-      { id: 302, name: "Window Fix" },
-      { id: 303, name: "Cabinet / Shelf Repair" },
-      { id: 304, name: "Flooring Issue" },
-      { id: 305, name: "Furniture Assembly" },
-    ],
-  };
 
   useEffect(() => {
+    debugger;
     setForm((prev) => ({ ...prev, subCategory: "" }));
 
     if (!form.category || form.category === 0) {
@@ -112,18 +94,18 @@ export default function RaiseRequestModal({
       return;
     }
 
-    // const fetchSubCategories = async () => {
-    //   try {
-    //     const res = await getSubCategoriesByCategory(form.category);
-    //     setSubCategories(res.data);
-    //   } catch (error) {
-    //     console.error("Error fetching subcategories:", error);
-    //   }
-    // };
+    const fetchSubCategories = async () => {
+      try {
+        const res = await getSubCategoriesByCategory(form.category);
+        setSubCategories(res.data);
+      } catch (error) {
+        console.error("Error fetching subcategories:", error);
+      }
+    };
 
-    // fetchSubCategories();
-    const subs = mockSubCategories[form.category] || []; //#Shahul
-    setSubCategories(subs);
+    fetchSubCategories();
+    // const subs = mockSubCategories[form.category] || []; //#Shahul
+    // setSubCategories(subs);
   }, [form.category]);
 
   const handleChange = (e) => {
@@ -151,9 +133,11 @@ export default function RaiseRequestModal({
         attachment: form.attachment ? form.attachment.name : null,
         employeeName: form.employeeName,
         contactNo: form.contactNo,
-        facility: apt.facility,
-        location: apt.location,
-        apartment: apt.apartment,
+        facility: Number(data.facid),
+        location: Number(data.locid),
+        apartment: Number(data.apart),
+        updatedBy: form.updatedBy,
+        empId: form.empId
       };
 
       const response = await submitMaintenanceRequest(payload);
@@ -161,6 +145,8 @@ export default function RaiseRequestModal({
       if (!response.data.status) {
         throw new Error(response.data.message || "Request failed");
       }
+      const resReq = await getApartmentRequestDetails(data.apart);
+              setStatuses(resReq.data);
       return true;
     } catch (error) {
       console.error("Error submitting request:", error); // error
@@ -375,18 +361,18 @@ export default function RaiseRequestModal({
               sx={{
                 background:
                   !form.category ||
-                  !form.subCategory ||
-                  !form.description ||
-                  !form.employeeName ||
-                  !form.contactNo
+                    !form.subCategory ||
+                    !form.description ||
+                    !form.employeeName ||
+                    !form.contactNo
                     ? P.border
                     : `linear-gradient(135deg, ${P.teal}, ${P.cyan})`,
                 color:
                   !form.category ||
-                  !form.subCategory ||
-                  !form.description ||
-                  !form.employeeName ||
-                  !form.contactNo
+                    !form.subCategory ||
+                    !form.description ||
+                    !form.employeeName ||
+                    !form.contactNo
                     ? P.muted
                     : P.bg,
                 fontFamily: "'Syne',sans-serif",

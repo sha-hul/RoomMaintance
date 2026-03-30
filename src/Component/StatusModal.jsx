@@ -146,11 +146,11 @@ function RequestRow({ r, expanded, onToggle, statusColor, statusIcon, P }) {
           </Typography>
           <Box sx={{ display: "flex", gap: 2, mt: 0.3 }}>
             <Typography sx={{ fontSize: "0.65rem", color: P.muted }}>
-              {r.id}
+              REQ-{r.id}
             </Typography>
             <Typography sx={{ fontSize: "0.65rem", color: P.muted }}>
               <CalendarMonth sx={{ fontSize: 10, mr: 0.3 }} />
-              {r.date}
+              {new Date(r.date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
             </Typography>
           </Box>
         </Box>

@@ -15,11 +15,11 @@ const SidebarContext = createContext();
 /* ─── nav items ─────────────────────────────────────────── */
 const NAV_ITEMS = [
     { text: "Dashboard", icon: <Dashboard />, path: "/admindashboard" },
-    { text: "Statistics", icon: <BarChart />, path: "/statistics" },
+    // { text: "Statistics", icon: <BarChart />, path: "/statistics" },
     { text: "Master", icon: <HomeWork />, path: "/masters" },
     { text: "Raise Request", icon: <AddAlert />, path: "/maintenancerequest" },
-    { text: "Report", icon: <Assessment />, path: "/report" },
-    { text: "User Manual", icon: <MenuBook />, path: "/UserManual" },
+    // { text: "Report", icon: <Assessment />, path: "/report" },
+    // { text: "User Manual", icon: <MenuBook />, path: "/UserManual" },
 ];
 
 const VOILET = "#5c6bc0";
@@ -33,7 +33,7 @@ function SidebarItem({ icon, text, path }) {
     const location = useLocation();
     const active = location.pathname.startsWith(path);
     
-
+    
     return (
         <Tooltip title={expanded ? "" : text} placement="right" arrow>
             <ListItem

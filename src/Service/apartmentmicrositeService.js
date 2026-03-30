@@ -15,7 +15,7 @@ export const decryptParams = async (facid, locid, apart) => {
 
 export const getApartmentDetails = (facid, locationId, apartmentID) => {
  return axios.get(`${API_URL_ApartmentMicrosite}/getApartmentDetails`, {
-    params: { faciId: Number(facid), locId: Number(locationId), appId: Number(apartmentID) },
+    params: { faciId: facid, locId: locationId, appId: apartmentID },
 });
 };
 

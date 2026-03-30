@@ -59,13 +59,11 @@ import RaiseRequestModal from "./RaiseRequestModal";
 import StatusModal from "./StatusModal";
 import {
   decryptParams,
-  getApartmentDetails,getApartmentRequestDetails
+  getApartmentDetails, getApartmentRequestDetails
 } from "../Service/apartmentmicrositeService";
 import CircularProgress from "@mui/material/CircularProgress";
 import { DARK, LIGHT } from "../Common/palette";
-import {
-  getCategories
-} from "../Service/maintenanceService";
+import { getCategories } from "../Service/maintenanceService";
 /* ─── palette ─────────────────────────────────────────────── */
 const Pl = {
   //changed from P to Pl
@@ -327,14 +325,14 @@ export default function ApartmentMicrosite() {
 
   // Run when URL params change
   useEffect(() => {
-    
+
     const fetchInitialDataByURL = async () => {
       debugger;
       try {
         const queryParams = new URLSearchParams(location.search);
         const facid = queryParams.get("facid");
         const locid = queryParams.get("locid");
-        const apartid = queryParams.get("apart"); //#Shahul Need to change in Apartment Master
+        const apartid = queryParams.get("apart"); 
 
         if (!facid || !locid || !apartid) return;
 
@@ -342,16 +340,16 @@ export default function ApartmentMicrosite() {
         setData(decrypted);
 
         // Fetch apartment details by decrypted params //#Shahul
-        const res = await getApartmentDetails(decrypted.facilityId, decrypted.locationId, decrypted.apartment);
+        const res = await getApartmentDetails(decrypted.facid, decrypted.locid, decrypted.apart);
         const data = res.data;
         setApt({
-          facility: data.facilityName,
-          location: data.locationName,
-          apartment: data.apartment,
-          subscriptionId: data.subscriptionId,
-          roomCount: data.roomCount,
-          isActive: data.isActive ?? true,
-          amenities: (data.amenities || []).map((name) => ({
+          facility: data[0].facility,
+          location: data[0].location,
+          apartment: data[0].apartment,
+          subscriptionId: data[0].subscriptionId,
+          roomCount: data[0].roomCount,
+          isActive: data[0].isActive ?? true,
+          amenities: (data[0].amenities || []).map((name) => ({
             label: name,
             icon: getAmenityIcon(name),
           })),
@@ -374,7 +372,7 @@ export default function ApartmentMicrosite() {
         // });
 
         // Fetch apartment request details
-        const resReq = await getApartmentRequestDetails(decrypted.apartment);
+        const resReq = await getApartmentRequestDetails(decrypted.apart);
         setStatuses(resReq.data);
         // setStatuses([
         //   {
@@ -417,6 +415,15 @@ export default function ApartmentMicrosite() {
     fetchInitialDataByURL();
   }, [location.search]);
 
+  const total = statuses.length;
+
+  const active = statuses.filter((s) =>
+    ["InProgress", "Pending", "OnHold"].includes(s.status),
+  ).length;
+
+  const closed = statuses.filter((s) =>
+    ["Closed", "Rejected"].includes(s.status),
+  ).length;
   /* shared modal box */
   const ModalWrap = ({ children, open, onClose, wide }) => (
     <Modal
@@ -993,9 +1000,9 @@ export default function ApartmentMicrosite() {
               }}
             >
               {[
-                { label: "Total", val: 3, color: P.teal }, //#Shahul Need to pass the Dynamic value
-                { label: "Active", val: 2, color: P.gold }, //#Shahul Need to pass the Dynamic value
-                { label: "Closed", val: 1, color: P.green }, //#Shahul Need to pass the Dynamic value
+                { label: "Total", val: total, color: P.teal },
+                { label: "Active", val: active, color: P.gold },
+                { label: "Closed", val: closed, color: P.green },
               ].map(({ label, val, color }) => (
                 <Box
                   key={label}
@@ -1132,7 +1139,7 @@ export default function ApartmentMicrosite() {
                       {`${r.category} - ${r.subCategory}`}
                     </Typography>
                     <Typography sx={{ fontSize: "0.65rem", color: P.muted }}>
-                      {r.date}
+                      {new Date(r.date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
                     </Typography>
                   </Box>
                   <Chip
@@ -1287,6 +1294,8 @@ export default function ApartmentMicrosite() {
         categories={categories}
         apt={apt}
         P={P}
+        data={data}
+        setStatuses={setStatuses} 
         ModalWrap={ModalWrap}
         setSnackbar={setSnackbar}
       />

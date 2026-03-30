@@ -80,11 +80,13 @@ const AdminDashboard = () => {
   const [modeldata, setModeldata] = useState({
     technician: "",
     remarks: "",
-    admin: ""
+    admin: "",
+    cost: 0
   });
   const [modeldataErrors, setModeldataErrors] = useState({
     technician: "",
-    remarks: ""
+    remarks: "",
+    cost: 0
   });
   const [userDetail, setUserdetail] = useState({
     empId: "",
@@ -318,7 +320,8 @@ const AdminDashboard = () => {
         statusId: Number(pendingValue),
         technician: modeldata.technician,
         remarks: modeldata.remarks,
-        admin: modeldata.admin
+        admin: modeldata.admin,
+        cost: modeldata.cost
       };
       await updateAction(payload);
       fetchData();
@@ -437,11 +440,11 @@ const AdminDashboard = () => {
   const getStatusIcon = (status) => {
     switch (status) {
       case "Pending":
-        return <Box sx={{ display: "inline" }}>
+        return <Box sx={{ display: "inline", color: "#534851" }}>
           <Schedule sx={{ fontSize: 14 }} /> Pending
         </Box>;
       case "InProgress":
-        return <Box sx={{ display: "inline", color: "#2e7d32" }}>
+        return <Box sx={{ display: "inline", color: "#2e607d" }}>
           <HourglassEmpty sx={{ fontSize: 14 }} /> InProgress
         </Box>;
       case "OnHold":
@@ -453,7 +456,7 @@ const AdminDashboard = () => {
           <Cancel sx={{ fontSize: 14 }} /> Rejected
         </Box>;
       case "Closed":
-        return <Box sx={{ display: "inline", color: "#37474f" }}>
+        return <Box sx={{ display: "inline", color: "#378a42" }}>
           <CheckCircle sx={{ fontSize: 14 }} /> Closed
         </Box>;
       default:
@@ -730,7 +733,7 @@ const AdminDashboard = () => {
             top: "50%",
             left: "50%",
             transform: "translate(-50%, -50%)",
-            width: 680,
+            width: 780,
             maxHeight: "90vh",
             overflowY: "auto",
             bgcolor: "background.paper",
@@ -803,13 +806,14 @@ const AdminDashboard = () => {
             <Typography variant="subtitle2" sx={{ color: "#1e3a5f", fontWeight: 700, mb: 1.5, textTransform: "uppercase", letterSpacing: 0.8, fontSize: 11 }}>
               Approver Details
             </Typography>
-
-            <Box sx={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 2, mb: 2 }}>
+            <Box sx={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 2, mb: 2 }}>
               {[
                 { label: "Admin", field: null, value: selectedRow?.status === "Pending" ? userDetail.name : selectedRow?.admin },
                 { label: "Technician", field: "technician", value: selectedRow?.technician },
                 { label: "Status", field: null, value: getStatusIcon(selectedRow?.status) },
-              ].map(({ label, field, value }) => (
+                (selectedRow?.status !== 'Rejected' && selectedRow?.status !== 'Pending') &&
+                { label: "Cost", field: null, value: selectedRow?.cost },
+              ].filter(Boolean).map(({ label, field, value }) => (
                 <Box key={label}>
                   <Typography sx={{ fontSize: 11, color: "text.secondary", mb: 0.3 }}>
                     {label}
@@ -857,13 +861,53 @@ const AdminDashboard = () => {
 
             {(selectedRow?.status !== 'Rejected' && selectedRow?.status !== 'Closed') && (<Divider sx={{ my: 2 }} />)}
 
-            {/* Section 3 — Remarks */}
+            {/* Section 3 — Cost & Remarks */}
             {(selectedRow?.status !== 'Rejected' && selectedRow?.status !== 'Closed') && (
               <Box>
+
+                {/* Cost Field */}
+                <Typography variant="subtitle2" sx={{ color: "#1e3a5f", fontWeight: 700, mb: 1, textTransform: "uppercase", letterSpacing: 0.8, fontSize: 11 }}>
+                  Cost
+                </Typography>
+                <TextField
+                  placeholder="0.00"
+                  size="small"
+                  value={modeldata.cost}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    // Allow only numbers and single decimal point
+                    if (/^\d*\.?\d*$/.test(value) || value === '') {
+                      handleModelChange("cost")(e);
+                    }
+                  }}
+                  onPaste={(e) => {
+                    const pasted = e.clipboardData.getData('text');
+                    // Block paste if not valid number
+                    if (!/^\d*\.?\d*$/.test(pasted)) {
+                      e.preventDefault();
+                    }
+                  }}
+                  onDrop={(e) => {
+                    // Block drag & drop of invalid text
+                    const dropped = e.dataTransfer.getData('text');
+                    if (!/^\d*\.?\d*$/.test(dropped)) {
+                      e.preventDefault();
+                    }
+                  }}
+                  error={!!modeldataErrors.cost}
+                  helperText={modeldataErrors.cost}
+                  inputProps={{ inputMode: "decimal" }}
+                  sx={{
+                    mb: 2.5,
+                    width: "150px",
+                    "& .MuiOutlinedInput-root": { borderRadius: 2, fontSize: 13 },
+                  }}
+                />
+
+                {/* Remarks Field */}
                 <Typography variant="subtitle2" sx={{ color: "#1e3a5f", fontWeight: 700, mb: 1, textTransform: "uppercase", letterSpacing: 0.8, fontSize: 11 }}>
                   Remarks
                 </Typography>
-
                 <TextField
                   fullWidth
                   multiline
