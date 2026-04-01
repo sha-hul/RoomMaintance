@@ -17,3 +17,9 @@ export const getRequestdetails = () => {
 export const updateAction = async (data) => {
     return axios.post(`${API_URL_AdminDashboard}/updateAction`, data);
 };
+
+export const getFileByRequestId = async (requestId) => {
+  return axios.get(`${API_URL_AdminDashboard}/GetFile/${requestId}`, {
+    responseType: 'blob' 
+  });
+};

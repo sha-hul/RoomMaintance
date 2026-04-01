@@ -57,9 +57,7 @@ import {
   getSubCategoriesByCategory,
   submitMaintenanceRequest,
 } from "../Service/maintenanceService";
-import {
-  decryptParams,
-  getApartmentDetails, getApartmentRequestDetails
+import {getApartmentRequestDetails
 } from "../Service/apartmentmicrositeService";
 export default function RaiseRequestModal({
   open,
@@ -104,22 +102,21 @@ export default function RaiseRequestModal({
     };
 
     fetchSubCategories();
-    // const subs = mockSubCategories[form.category] || []; //#Shahul
-    // setSubCategories(subs);
   }, [form.category]);
 
   const handleChange = (e) => {
+    debugger;
     const { name, value, files } = e.target;
-    setForm((prev) => ({
-      ...prev,
-      [name]: files ? files[0] : value,
-    }));
+    if (name === "attachment") {
+      setForm(prev => ({ ...prev, attachment: files[0] || null }));
+    } else {
+      setForm(prev => ({ ...prev, [name]: value }));
+    }
   };
 
   const handleSubmit = async () => {
     debugger;
     let res = await confirmSubmit();
-    res = true; //#Shahul need to remove
     res ? setSubmitted(true) : setSubmitted(false);
   };
 
@@ -130,7 +127,6 @@ export default function RaiseRequestModal({
         category: Number(form.category),
         subCategory: Number(form.subCategory),
         description: form.description,
-        attachment: form.attachment ? form.attachment.name : null,
         employeeName: form.employeeName,
         contactNo: form.contactNo,
         facility: Number(data.facid),
@@ -140,19 +136,19 @@ export default function RaiseRequestModal({
         empId: form.empId
       };
 
-      const response = await submitMaintenanceRequest(payload);
+      const response = await submitMaintenanceRequest(payload, form.attachment);
 
       if (!response.data.status) {
         throw new Error(response.data.message || "Request failed");
       }
       const resReq = await getApartmentRequestDetails(data.apart);
-              setStatuses(resReq.data);
+      setStatuses(resReq.data);
       return true;
     } catch (error) {
       console.error("Error submitting request:", error); // error
       setSnackbar({
         open: true,
-        message: error.message || "Something went wrong. Please try again.",
+        message: error.message + " - Mail to ITService.mouwasat.com" || "Something went wrong. Please try again.",
         severity: "error",
       });
       return false;
@@ -299,7 +295,7 @@ export default function RaiseRequestModal({
               <Box
                 component="label"
                 sx={{
-                  border: `1.5px dashed ${P.border}`,
+                  border: `1.5px dashed ${form.attachment ? P.teal : P.border}`, 
                   borderRadius: "10px",
                   p: 2,
                   textAlign: "center",
@@ -313,16 +309,38 @@ export default function RaiseRequestModal({
                   type="file"
                   name="attachment"
                   hidden
+                  accept=".png,.jpg,.jpeg,.pdf"
                   onChange={handleChange}
                 />
-                <Typography sx={{ fontSize: "0.78rem", color: P.muted }}>
-                  Click to upload or drag & drop
-                </Typography>
-                <Typography
-                  sx={{ fontSize: "0.7rem", color: P.muted, mt: 0.5 }}
-                >
-                  PNG, JPG, PDF up to 10MB
-                </Typography>
+
+                {form.attachment ? (
+                  // ✅ Show filename when file is selected
+                  <Box sx={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 1 }}>
+                    <Typography sx={{ fontSize: "0.78rem", color: P.teal, fontWeight: 600 }}>
+                      📎 {form.attachment.name}
+                    </Typography>
+                    <Typography
+                      component="span"
+                      onClick={(e) => {
+                        e.preventDefault(); // prevent file dialog opening
+                        setForm(prev => ({ ...prev, attachment: null })); // ✅ Clear file
+                      }}
+                      sx={{ fontSize: "0.75rem", color: "red", cursor: "pointer", ml: 1 }}
+                    >
+                      ✕
+                    </Typography>
+                  </Box>
+                ) : (
+                  // Default view
+                  <>
+                    <Typography sx={{ fontSize: "0.78rem", color: P.muted }}>
+                      Click to upload
+                    </Typography>
+                    <Typography sx={{ fontSize: "0.7rem", color: P.muted, mt: 0.5 }}>
+                      PNG, JPG, PDF up to 10MB
+                    </Typography>
+                  </>
+                )}
               </Box>
             </Box>
 

@@ -1310,6 +1310,8 @@ export default function ApartmentMicrosite() {
         statusIcon={statusIcon}
         ModalWrap={ModalWrap}
         P={P}
+        data={data}
+        setStatuses={setStatuses}
       />
       {/* ── snack ── */}
       <Snackbar

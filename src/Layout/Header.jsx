@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Home, Logout } from "@mui/icons-material";
 import { APP_CONFIG } from "../config";
@@ -23,7 +23,7 @@ const Header = () => {
 
             // }
             // else{
-            navigate("/empdashboard")
+            navigate("/admindashboard")
             // }
         }
     }
@@ -171,6 +171,7 @@ const Header = () => {
                             sx={{ mb: 1 }}
                             onClick={() => {
                                 localStorage.removeItem("token");
+                                sessionStorage.removeItem("user");
                                 setLogoutModal(false);
                                 navigate("/");
                             }}

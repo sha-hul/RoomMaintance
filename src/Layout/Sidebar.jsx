@@ -8,6 +8,7 @@ import {
     Dashboard, BarChart, HomeWork, AddAlert, MenuBook, Assessment
 } from "@mui/icons-material";
 import { useLocation, useNavigate } from "react-router-dom";
+import AddBoxIcon from "@mui/icons-material/AddBox";
 
 /* ─── context ───────────────────────────────────────────── */
 const SidebarContext = createContext();
@@ -17,7 +18,7 @@ const NAV_ITEMS = [
     { text: "Dashboard", icon: <Dashboard />, path: "/admindashboard" },
     // { text: "Statistics", icon: <BarChart />, path: "/statistics" },
     { text: "Master", icon: <HomeWork />, path: "/masters" },
-    { text: "Raise Request", icon: <AddAlert />, path: "/maintenancerequest" },
+    { text: "Raise Request", icon: <AddBoxIcon />, path: "/maintenancerequest" },
     // { text: "Report", icon: <Assessment />, path: "/report" },
     // { text: "User Manual", icon: <MenuBook />, path: "/UserManual" },
 ];
@@ -110,6 +111,7 @@ export default function Sidebar() {
 
     useEffect(() => {
         const user = JSON.parse(sessionStorage.getItem("user"));
+        if(!user) return;
         setUserdetail({
             empId: user.empId,
             name: user.name,

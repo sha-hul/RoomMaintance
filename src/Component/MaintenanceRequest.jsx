@@ -22,7 +22,7 @@ const MaintenanceRequest = ({ contactNo }) => {
         category: "",
         subCategory: "",
         description: "",
-        attachment: "",
+        attachment: null,
         employeeName: "",
         contactNo,
         updatedBy: "admin",
@@ -50,7 +50,7 @@ const MaintenanceRequest = ({ contactNo }) => {
         setForm(prev => ({
             ...prev,
             employeeName: user.name,
-            empId:user.empId
+            empId: user.empId
         }));
         const fetchDropdowns = async () => {
             try {
@@ -65,7 +65,7 @@ const MaintenanceRequest = ({ contactNo }) => {
         };
 
         fetchDropdowns();
-        
+
     }, []);
 
     // Fetch locations when facility changes
@@ -187,19 +187,17 @@ const MaintenanceRequest = ({ contactNo }) => {
         isSubmitting.current = true;
 
         try {
-            console.log("test line......1")
+            const { attachment, ...rest } = form;
+
             const payload = {
-                ...form,
+                ...rest,
                 facility: Number(form.facility),
                 location: Number(form.location),
                 apartment: Number(form.apartment),
                 category: Number(form.category),
                 subCategory: Number(form.subCategory),
-                attachment: form.attachment ? form.attachment.name : null
             };
-            console.log("test line......2")
-            const response = await submitMaintenanceRequest(payload);
-            console.log("test line......3")
+            const response = await submitMaintenanceRequest(payload, form.attachment);
 
             if (!response.data.status) {
                 throw new Error(response.data.message || "Request failed");

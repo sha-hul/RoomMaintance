@@ -1,3 +1,52 @@
+Apr-1
+
+Bug - 
+Admin Dashboard 
+->Cost Need to be update on every action else it becomes 0 
+->Click on OnHold No Need required of Technician
+->Click on Reject No Need of Technician
+->If apartment in inActive whether I need to show the request in Admin Dashboard?
+
+
+Master Page
+Search on 2nd pagination
+->It will show the result in first pagination
+->Click on Raise Request again all the form property should be in default
+
+Apartment Microsite
+->Need to disable Raise Request if apartment is inactive
+->Upload Attachment issue
+->Do I need to remove all the fields and make default when I click on raise req again isSubmitted is none?
+->Do I need to keep only one request raise for one QR Code Scan?
+
+
+
+Technician =>
+
+Opening on View of Pending request view
+By Click on Approve it's required
+By Click on OnHold it's not required
+By Click on Reject it's not required
+
+Opening on View of OnHold Request View
+If Techinican value is empty, then it needs text field
+By Click on Approve it's required
+By Click on Reject it's not required
+If Technician value is not empty, then it needs a edit button To edit the exisiting technician
+By Click on Approve it's required
+By Click on Reject it's not required
+
+Opening on View of InProgress Request View
+Technician will have value because this page is after the Approve button 
+then it needs a edit button To edit the exisiting technician
+By Click on Close it's required
+
+Opening on View of Closed Request View
+Read only no field
+
+Opening on View of Reject Request View
+Read only no field
+
 Mar-28
 
 Create API Method for ApartmentMicrositeDemo

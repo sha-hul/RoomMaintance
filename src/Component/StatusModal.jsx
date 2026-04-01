@@ -1,4 +1,4 @@
-import { Box, Typography, IconButton, Chip, Fade } from "@mui/material";
+import { Box, Typography, IconButton, Chip, Fade, Button } from "@mui/material";
 import {
   Schedule,
   Close,
@@ -7,6 +7,8 @@ import {
 } from "@mui/icons-material";
 import { useState } from "react";
 import Dialog from "@mui/material/Dialog";
+import CancelOutlinedIcon from "@mui/icons-material/CancelOutlined";
+import {cancelMaintenanceRequest, getApartmentRequestDetails} from "../Service/apartmentmicrositeService"
 
 export default function StatusModal({
   open,
@@ -16,9 +18,12 @@ export default function StatusModal({
   statusIcon,
   P,
   ModalWrap,
+  setStatuses,
+  data
 }) {
-  const [expanded, setExpanded] = useState(null);
 
+  const [expanded, setExpanded] = useState(null);
+  
   return (
     <ModalWrap open={open} onClose={onClose} wide>
       {/* Header */}
@@ -82,6 +87,8 @@ export default function StatusModal({
             statusColor={statusColor}
             statusIcon={statusIcon}
             P={P}
+            setStatuses={setStatuses}
+            data={data}
           />
         ))}
       </Box>
@@ -90,7 +97,21 @@ export default function StatusModal({
 }
 
 // ── Inner Row Component ───────────────────────────────────────────────
-function RequestRow({ r, expanded, onToggle, statusColor, statusIcon, P }) {
+function RequestRow({ r, expanded, onToggle, statusColor, statusIcon, P, setStatuses,data }) {
+
+  const handleCancelRequest = async (id) => {
+    if (!window.confirm("Are you sure you want to cancel this request?")) return;
+    try {
+      debugger;
+      await cancelMaintenanceRequest(id);
+      const resReq = await getApartmentRequestDetails(data.apart);
+      setStatuses(resReq.data);
+    } catch (error) {
+      console.error("Cancel error:", error);
+      alert("Failed to cancel request.");
+    }
+  };
+
   return (
     <Box
       sx={{
@@ -235,7 +256,7 @@ function RequestRow({ r, expanded, onToggle, statusColor, statusIcon, P }) {
               >
                 Admin Remarks
               </Typography>
-              {r.adminRemarks ? (
+              {r.adminRemark ? (
                 <Box sx={{ display: "flex", gap: 1, alignItems: "flex-start" }}>
                   <Box
                     sx={{
@@ -255,7 +276,7 @@ function RequestRow({ r, expanded, onToggle, statusColor, statusIcon, P }) {
                       lineHeight: 1.6,
                     }}
                   >
-                    {r.adminRemarks}
+                    {r.adminRemark}
                   </Typography>
                 </Box>
               ) : (
@@ -271,6 +292,38 @@ function RequestRow({ r, expanded, onToggle, statusColor, statusIcon, P }) {
                 </Typography>
               )}
             </Box>
+
+            {/* Cancel Button — Pending only */}
+            {r.status === "Pending" && (
+              <>
+                <Box sx={{ borderTop: `1px solid ${P.border}55`, mt: 2, mb: 2 }} />
+                <Box sx={{ display: "flex", justifyContent: "flex-end" }}>
+                  <Button
+                    size="small"
+                    variant="outlined"
+                    startIcon={<CancelOutlinedIcon />}
+                    onClick={() => handleCancelRequest(r.id)}
+                    sx={{
+                      fontSize: "0.75rem",
+                      textTransform: "none",
+                      fontFamily: "'DM Sans',sans-serif",
+                      fontWeight: 600,
+                      color: "#c62828",
+                      borderColor: "#ef9a9a",
+                      borderRadius: "8px",
+                      px: 2,
+                      "&:hover": {
+                        backgroundColor: "#ffebee",
+                        borderColor: "#c62828",
+                      },
+                    }}
+                  >
+                    Cancel Request
+                  </Button>
+                </Box>
+              </>
+            )}
+
           </Box>
         </Fade>
       )}

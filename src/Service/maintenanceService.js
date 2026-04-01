@@ -31,6 +31,22 @@ export const getSubCategoriesByCategory = (categoryId) =>
 
 // ---------------------Request Submission ---------------------
 
-export const submitMaintenanceRequest = async (data) => {
-  return axiosInstance.post(`${API_URL_Request}/SubmitRequest`, data);
+export const submitMaintenanceRequest = async (data, file) => {
+  const formData = new FormData();
+  
+  // Append all payload fields
+  Object.keys(data).forEach(key => {
+    if (data[key] !== null && data[key] !== undefined) {
+      formData.append(key, data[key]);
+    }
+  });
+
+  // Append file if exists
+  if (file) {
+    formData.append('attachment', file);
+  }
+
+  return axiosInstance.post(`${API_URL_Request}/SubmitRequest`, formData, {
+    headers: { 'Content-Type': 'multipart/form-data' }
+  });
 };

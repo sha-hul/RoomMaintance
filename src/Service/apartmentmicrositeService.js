@@ -22,3 +22,7 @@ export const getApartmentDetails = (facid, locationId, apartmentID) => {
 export const getApartmentRequestDetails = (apartmentId) => {
   return axios.get(`${API_URL_ApartmentMicrosite}/getApartmentRequestDetails/${apartmentId}`);
 };
+
+export const cancelMaintenanceRequest = (reqId) =>{
+  return axios.put(`${API_URL_ApartmentMicrosite}/cancelMaintenanceRequest/${reqId}`);
+}

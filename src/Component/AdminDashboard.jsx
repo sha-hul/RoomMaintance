@@ -5,7 +5,7 @@ import {
 import { DataGrid } from "@mui/x-data-grid";
 import { useNavigate } from "react-router-dom";
 import SearchIcon from "@mui/icons-material/Search";
-import { getRequestdetails, updateAction } from "../Service/admindashboardService";
+import { getRequestdetails, updateAction, getFileByRequestId } from "../Service/admindashboardService";
 import CalendarMonthIcon from "@mui/icons-material/CalendarMonth";
 import BoltIcon from "@mui/icons-material/Bolt";
 import CancelIcon from "@mui/icons-material/Cancel";
@@ -18,6 +18,8 @@ import Divider from "@mui/material/Divider";
 import { Close, AttachFile, Schedule, HourglassEmpty, PauseCircle, Cancel, CheckCircle } from "@mui/icons-material";
 import PauseCircleFilledIcon from "@mui/icons-material/PauseCircleFilled";
 import LockIcon from "@mui/icons-material/Lock";
+import { Visibility, Download } from '@mui/icons-material';
+import { Dialog, DialogContent } from '@mui/material';
 
 const STATUS_MODAL_CONFIG = {
   "2": {
@@ -53,6 +55,7 @@ const STATUS_MODAL_CONFIG = {
     btnColor: "inherit",
   },
 };
+const parseRequestId = (requestId) => Number(String(requestId).replace("REQ-", ""));
 
 const AdminDashboard = () => {
 
@@ -77,6 +80,7 @@ const AdminDashboard = () => {
   const [successModal, setSuccessModal] = useState(false);
   const [pendingValue, setPendingValue] = useState(null); // holds the status value
   const [modelreqID, setModelreqID] = useState(null);
+  const [preview, setPreview] = useState({ open: false, type: null, url: null });
   const [modeldata, setModeldata] = useState({
     technician: "",
     remarks: "",
@@ -94,52 +98,22 @@ const AdminDashboard = () => {
     role: "",
     mail: ""
   });
-  // // Sample rows (replace with API data)
-  // const rows = [
-  //   { id: 1, requestId: "REQ-1001", facility: "Dammam", location: "Mukthi Villa", apartment: "A-101", requestDate: "2026-01-20", subCategory: "Plumbing", status: "Pending" },
-  //   { id: 2, requestId: "REQ-1002", facility: "Khobar", location: "Compound", apartment: "B-202", requestDate: "2026-01-18", subCategory: "Electrical", status: "InProgress" },
-  //   { id: 3, requestId: "REQ-1003", facility: "Jubail", location: "Palm Residency", apartment: "C-305", requestDate: "2026-01-22", subCategory: "AC Maintenance", status: "Closed" },
-  //   { id: 4, requestId: "REQ-1004", facility: "Dammam", location: "Laundry", apartment: "A-210", requestDate: "2026-01-19", subCategory: "Carpentry", status: "Rejected" },
-  //   { id: 5, requestId: "REQ-1005", facility: "Khobar", location: "Chandran Villa Old", apartment: "B-110", requestDate: "2026-01-17", subCategory: "Painting", status: "OnHold" },
-  //   { id: 6, requestId: "REQ-1006", facility: "Jubail", location: "Pharmacy-18", apartment: "C-120", requestDate: "2026-01-21", subCategory: "Cleaning", status: "Pending" },
-  //   { id: 7, requestId: "REQ-1007", facility: "Dammam", location: "Jubail Residency", apartment: "A-330", requestDate: "2026-01-23", subCategory: "Pest Control", status: "Closed" },
-  //   { id: 8, requestId: "REQ-1008", facility: "Khobar", location: "Mukthi Villa", apartment: "B-415", requestDate: "2026-01-16", subCategory: "Electrical", status: "InProgress" },
-  //   { id: 9, requestId: "REQ-1009", facility: "Jubail", location: "Compound", apartment: "C-501", requestDate: "2026-01-24", subCategory: "Plumbing", status: "Rejected" },
-  //   { id: 10, requestId: "REQ-1010", facility: "Dammam", location: "Palm Residency", apartment: "A-150", requestDate: "2026-01-15", subCategory: "AC Maintenance", status: "Pending" },
-
-  //   { id: 11, requestId: "REQ-1011", facility: "Khobar", location: "Laundry", apartment: "B-305", requestDate: "2026-01-14", subCategory: "Carpentry", status: "OnHold" },
-  //   { id: 12, requestId: "REQ-1012", facility: "Jubail", location: "Chandran Villa Old", apartment: "C-220", requestDate: "2026-01-13", subCategory: "Cleaning", status: "InProgress" },
-  //   { id: 13, requestId: "REQ-1013", facility: "Dammam", location: "Pharmacy-18", apartment: "A-402", requestDate: "2026-01-12", subCategory: "Painting", status: "Pending" },
-  //   { id: 14, requestId: "REQ-1014", facility: "Khobar", location: "Jubail Residency", apartment: "B-118", requestDate: "2026-01-11", subCategory: "Pest Control", status: "Rejected" },
-  //   { id: 15, requestId: "REQ-1015", facility: "Jubail", location: "Mukthi Villa", apartment: "C-330", requestDate: "2026-01-10", subCategory: "Electrical", status: "Closed" },
-  //   { id: 16, requestId: "REQ-1016", facility: "Dammam", location: "Compound", apartment: "A-250", requestDate: "2026-01-09", subCategory: "Plumbing", status: "InProgress" },
-  //   { id: 17, requestId: "REQ-1017", facility: "Khobar", location: "Palm Residency", apartment: "B-512", requestDate: "2026-01-08", subCategory: "AC Maintenance", status: "Pending" },
-  //   { id: 18, requestId: "REQ-1018", facility: "Jubail", location: "Laundry", apartment: "C-140", requestDate: "2026-01-07", subCategory: "Carpentry", status: "OnHold" },
-  //   { id: 19, requestId: "REQ-1019", facility: "Dammam", location: "Chandran Villa Old", apartment: "A-360", requestDate: "2026-01-06", subCategory: "Cleaning", status: "Rejected" },
-  //   { id: 20, requestId: "REQ-1020", facility: "Khobar", location: "Pharmacy-18", apartment: "B-220", requestDate: "2026-01-05", subCategory: "Painting", status: "Closed" },
-
-  //   { id: 21, requestId: "REQ-1021", facility: "Jubail", location: "Jubail Residency", apartment: "C-410", requestDate: "2026-01-04", subCategory: "Electrical", status: "InProgress" },
-  //   { id: 22, requestId: "REQ-1022", facility: "Dammam", location: "Mukthi Villa", apartment: "A-180", requestDate: "2026-01-03", subCategory: "Plumbing", status: "Pending" },
-  //   { id: 23, requestId: "REQ-1023", facility: "Khobar", location: "Compound", apartment: "B-330", requestDate: "2026-01-02", subCategory: "AC Maintenance", status: "Rejected" },
-  //   { id: 24, requestId: "REQ-1024", facility: "Jubail", location: "Palm Residency", apartment: "C-260", requestDate: "2026-01-01", subCategory: "Pest Control", status: "InProgress" },
-  //   { id: 25, requestId: "REQ-1025", facility: "Dammam", location: "Laundry", apartment: "A-501", requestDate: "2025-12-31", subCategory: "Carpentry", status: "Closed" },
-  //   { id: 26, requestId: "REQ-1026", facility: "Khobar", location: "Chandran Villa Old", apartment: "B-145", requestDate: "2025-12-30", subCategory: "Cleaning", status: "Pending" },
-  //   { id: 27, requestId: "REQ-1027", facility: "Jubail", location: "Pharmacy-18", apartment: "C-350", requestDate: "2025-12-29", subCategory: "Painting", status: "InProgress" },
-  //   { id: 28, requestId: "REQ-1028", facility: "Dammam", location: "Jubail Residency", apartment: "A-275", requestDate: "2025-12-28", subCategory: "Electrical", status: "OnHold" },
-  //   { id: 29, requestId: "REQ-1029", facility: "Khobar", location: "Mukthi Villa", apartment: "B-480", requestDate: "2025-12-27", subCategory: "Plumbing", status: "Closed" },
-  //   { id: 30, requestId: "REQ-1030", facility: "Jubail", location: "Compound", apartment: "C-600", requestDate: "2025-12-26", subCategory: "AC Maintenance", status: "Rejected" }
-  // ];
-
-  // DataGrid Columns
-  // User
-
+  const [fileUrl, setFileUrl] = useState(null);
+  const [fileExt, setFileExt] = useState(null);
+  
   const fetchData = async () => {
-    const res = await getRequestdetails();
-    setRows(res.data);
+    try {
+      const res = await getRequestdetails();
+      setRows(res.data);
+      
+    } 
+    catch (error) {
+      console.error(error);
+    navigate("/error");  
+    }
   }
 
   useEffect(() => {
-    debugger;
     const user = JSON.parse(sessionStorage.getItem("user"));
     if (user) {
       setUserdetail({
@@ -151,18 +125,32 @@ const AdminDashboard = () => {
       fetchData();
     }
   }, []);
-
+  
   useEffect(() => {
     if (selectedRow) {
+      // Set model data
       setModeldata(prev => ({
         ...prev,
         technician: selectedRow.technician || "",
         admin: userDetail.name
       }));
+
+      // Load file only if attachment exists
+      if (selectedRow.requestId && selectedRow.attachment) {
+        const reqID = parseRequestId(selectedRow.requestId)
+        loadFile(reqID);
+      } else {
+        setFileUrl(null);
+        setFileExt(null);
+      }
     }
   }, [selectedRow, userDetail.name]);
 
-  const parseRequestId = (requestId) => Number(String(requestId).replace("REQ-", ""));
+  useEffect(() => {
+    return () => {
+      if (fileUrl) URL.revokeObjectURL(fileUrl);
+    };
+  }, [fileUrl]);
 
   const columns = [
     { field: "requestId", headerName: "Request ID", flex: 1 },
@@ -364,7 +352,6 @@ const AdminDashboard = () => {
 
   // Global Search
   const filteredRows = useMemo(() => {
-    console.log(rows);
     debugger;
     return rows.filter((row) => {
       const matchesSearch = Object.values(row)
@@ -465,6 +452,30 @@ const AdminDashboard = () => {
         </Box>;
     }
   }
+
+  const loadFile = async (requestId) => {
+    try {
+      const response = await getFileByRequestId(requestId);
+      const ext = selectedRow.attachment.split('.').pop().toLowerCase();
+      const mimeTypes = {
+        png: 'image/png',
+        jpg: 'image/jpeg',
+        jpeg: 'image/jpeg',
+        webp: 'image/webp',
+        pdf: 'application/pdf',
+        mp4: 'video/mp4',
+        mov: 'video/quicktime',
+      };
+      const mime = mimeTypes[ext] || 'application/octet-stream';
+      const blob = new Blob([response.data], { type: mime });
+      const url = URL.createObjectURL(blob);
+      setFileUrl(url);
+      setFileExt(ext);
+    } catch (error) {
+      console.error("Failed to load file:", error);
+    }
+  };
+
   return (
     <>
 
@@ -787,17 +798,54 @@ const AdminDashboard = () => {
               ))}
 
               {/* Attachment */}
-              <Box>
-                <Typography sx={{ fontSize: 11, color: "text.secondary", mb: 0.3 }}>Attachment</Typography>
-                <Button
-                  size="small"
-                  variant="outlined"
-                  startIcon={<AttachFile sx={{ fontSize: 13 }} />}
-                  sx={{ fontSize: 12, textTransform: "none", borderRadius: 2, py: 0.3 }}
-                >
-                  View File
-                </Button>
-              </Box>
+              {selectedRow?.attachment && (() => {
+                const ext = selectedRow.attachment.split('.').pop().toLowerCase();
+                const imageExts = ['png', 'jpg', 'jpeg', 'webp'];
+                const videoExts = ['mp4', 'mov'];
+                const isPdf = ext === 'pdf';
+                const isImage = imageExts.includes(ext);
+                const isVideo = videoExts.includes(ext);
+                const canView = isImage || isVideo || isPdf;
+
+                return (
+                  <Box>
+                    <Typography sx={{ fontSize: 11, color: "text.secondary", mb: 0.3 }}>
+                      Attachment
+                    </Typography>
+                    <Button
+                      size="small"
+                      variant="outlined"
+                      startIcon={canView
+                        ? <Visibility sx={{ fontSize: 13 }} />
+                        : <Download sx={{ fontSize: 13 }} />
+                      }
+                      disabled={!fileUrl} // ✅ Disable until file loaded
+                      onClick={() => {
+                        if (!fileUrl) return;
+                        if (isImage) {
+                          setPreview({ open: true, type: 'image', url: fileUrl });
+                        } else if (isVideo) {
+                          setPreview({ open: true, type: 'video', url: fileUrl });
+                        } else if (isPdf) {
+                          window.open(fileUrl, '_blank');
+                        } else {
+                          // Download
+                          const a = document.createElement('a');
+                          a.href = fileUrl;
+                          a.download = selectedRow.attachment;
+                          a.click();
+                        }
+                      }}
+                      sx={{ fontSize: 12, textTransform: "none", borderRadius: 2, py: 0.3 }}
+                    >
+                      {!fileUrl
+                        ? 'Loading...'
+                        : canView ? 'View File' : 'Download File'
+                      }
+                    </Button>
+                  </Box>
+                );
+              })()}
             </Box>
 
             <Divider sx={{ my: 2 }} />
@@ -1023,6 +1071,44 @@ const AdminDashboard = () => {
           </Modal>
         );
       })()}
+
+      {/* Preview Modal — Image & Video */}
+      <Dialog
+        open={preview.open}
+        onClose={() => setPreview({ open: false, type: null, url: null })}
+        maxWidth="md"
+        fullWidth
+      >
+        <DialogContent sx={{ p: 1, textAlign: 'center', bgcolor: '#000' }}>
+          <IconButton
+            onClick={() => setPreview({ open: false, type: null, url: null })}
+            sx={{ position: 'absolute', top: 8, right: 8, color: '#fff' }}
+          >
+            <Close />
+          </IconButton>
+
+          {/* Image Preview */}
+          {preview.type === 'image' && (
+            <Box
+              component="img"
+              src={preview.url}
+              alt="attachment"
+              sx={{ maxWidth: '100%', maxHeight: '80vh', objectFit: 'contain' }}
+            />
+          )}
+
+          {/* Video Preview */}
+          {preview.type === 'video' && (
+            <Box
+              component="video"
+              src={preview.url}
+              controls
+              autoPlay
+              sx={{ maxWidth: '100%', maxHeight: '80vh' }}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
     </>
   );
 };
