@@ -100,7 +100,7 @@ const AdminDashboard = () => {
   });
   const [fileUrl, setFileUrl] = useState(null);
   const [fileExt, setFileExt] = useState(null);
-  
+
   const fetchData = async () => {
     try {
       const res = await getRequestdetails();
@@ -109,7 +109,7 @@ const AdminDashboard = () => {
     } 
     catch (error) {
       console.error(error);
-    navigate("/error");  
+      navigate("/error");
     }
   }
 
@@ -125,19 +125,25 @@ const AdminDashboard = () => {
       fetchData();
     }
   }, []);
-  
+
   useEffect(() => {
     if (selectedRow) {
       // Set model data
       setModeldata(prev => ({
         ...prev,
         technician: selectedRow.technician || "",
-        admin: userDetail.name
+        admin: userDetail.name,
+        cost:
+          selectedRow?.cost !== null &&
+          selectedRow?.cost !== undefined &&
+          selectedRow?.cost !== 0
+            ? selectedRow?.cost
+            : 0,
       }));
 
       // Load file only if attachment exists
       if (selectedRow.requestId && selectedRow.attachment) {
-        const reqID = parseRequestId(selectedRow.requestId)
+        const reqID = parseRequestId(selectedRow.requestId);
         loadFile(reqID);
       } else {
         setFileUrl(null);
@@ -160,35 +166,49 @@ const AdminDashboard = () => {
     { field: "requestDate", headerName: "Request Date", flex: 1 },
     { field: "subCategory", headerName: "SubCategory", flex: 1 },
     {
-      field: "status", headerName: "Request Status", flex: 1,
+      field: "status",
+      headerName: "Request Status",
+      flex: 1,
       renderCell: (params) => {
         switch (params.value) {
           case "Pending":
-            return <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
-              <Schedule sx={{ fontSize: 14 }} /> Pending
-            </Box>;
+            return (
+              <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+                <Schedule sx={{ fontSize: 14 }} /> Pending
+              </Box>
+            );
           case "InProgress":
-            return <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
-              <HourglassEmpty sx={{ fontSize: 14 }} /> InProgress
-            </Box>;
+            return (
+              <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+                <HourglassEmpty sx={{ fontSize: 14 }} /> InProgress
+              </Box>
+            );
           case "OnHold":
-            return <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
-              <PauseCircle sx={{ fontSize: 14 }} /> OnHold
-            </Box>;
+            return (
+              <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+                <PauseCircle sx={{ fontSize: 14 }} /> OnHold
+              </Box>
+            );
           case "Rejected":
-            return <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
-              <Cancel sx={{ fontSize: 14 }} /> Rejected
-            </Box>;
+            return (
+              <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+                <Cancel sx={{ fontSize: 14 }} /> Rejected
+              </Box>
+            );
           case "Closed":
-            return <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
-              <CheckCircle sx={{ fontSize: 14 }} /> Closed
-            </Box>;
+            return (
+              <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+                <CheckCircle sx={{ fontSize: 14 }} /> Closed
+              </Box>
+            );
           default:
-            return <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
-              <Schedule sx={{ fontSize: 14 }} /> Unknown
-            </Box>;
+            return (
+              <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+                <Schedule sx={{ fontSize: 14 }} /> Unknown
+              </Box>
+            );
         }
-      }
+      },
     },
     {
       field: "action",
@@ -213,7 +233,7 @@ const AdminDashboard = () => {
               fontWeight: 600,
               borderRadius: "8px",
               px: 2,
-              "&:hover": { backgroundColor: "#125ea8" }
+              "&:hover": { backgroundColor: "#125ea8" },
             }}
             startIcon={<BoltIcon />}
             onClick={() => {
@@ -221,12 +241,12 @@ const AdminDashboard = () => {
               setModeldata({
                 technician: "",
                 remarks: "",
-                admin: ""
+                admin: "",
               });
               setModeldataErrors({
                 technician: "",
-                remarks: ""
-              })
+                remarks: "",
+              });
               setViewModalOpen(true);
             }}
           >
@@ -244,56 +264,95 @@ const AdminDashboard = () => {
               borderRadius: "8px",
               px: 2,
               "&:hover": {
-                backgroundColor:
-                  status === "Rejected" ? "#b71c1c" : "#1b5e20"
-              }
+                backgroundColor: status === "Rejected" ? "#b71c1c" : "#1b5e20",
+              },
             }}
             startIcon={
-              status === "Rejected" ? (
-                <CancelIcon />
-              ) : (
-                <CheckCircleIcon />
-              )
+              status === "Rejected" ? <CancelIcon /> : <CheckCircleIcon />
             }
             onClick={() => {
               setSelectedRow(params.row);
+              setModeldata({
+                technician: "",
+                remarks: "",
+                admin: "",
+              });
+              setModeldataErrors({
+                technician: "",
+                remarks: "",
+              });
               setViewModalOpen(true);
             }}
           >
             {status === "Rejected" ? "Rejected" : "Closed"}
           </Button>
         );
-      }
-    }
+      },
+    },
   ];
 
   const getActionButtons = (status) => {
     switch (status) {
       case "Pending":
         return [
-          { label: "Approve", color: "#2e7d32", bg: "#e8f5e9", border: "#a5d6a7", value: "2" },
-          { label: "OnHold", color: "#e65100", bg: "#fff3e0", border: "#ffcc80", value: "3" },
-          { label: "Reject", color: "#c62828", bg: "#ffebee", border: "#ef9a9a", value: "4" },
+          {
+            label: "Approve",
+            color: "#2e7d32",
+            bg: "#e8f5e9",
+            border: "#a5d6a7",
+            value: "2",
+          },
+          {
+            label: "OnHold",
+            color: "#e65100",
+            bg: "#fff3e0",
+            border: "#ffcc80",
+            value: "3",
+          },
+          {
+            label: "Reject",
+            color: "#c62828",
+            bg: "#ffebee",
+            border: "#ef9a9a",
+            value: "4",
+          },
         ];
       case "InProgress":
         return [
-          { label: "Close", color: "#37474f", bg: "#eceff1", border: "#b0bec5", value: "5" },
+          {
+            label: "Close",
+            color: "#37474f",
+            bg: "#eceff1",
+            border: "#b0bec5",
+            value: "5",
+          },
         ];
       case "OnHold":
         return [
-          { label: "Approve", color: "#2e7d32", bg: "#e8f5e9", border: "#a5d6a7", value: "2" },
-          { label: "Reject", color: "#c62828", bg: "#ffebee", border: "#ef9a9a", value: "4" },
+          {
+            label: "Approve",
+            color: "#2e7d32",
+            bg: "#e8f5e9",
+            border: "#a5d6a7",
+            value: "2",
+          },
+          {
+            label: "Reject",
+            color: "#c62828",
+            bg: "#ffebee",
+            border: "#ef9a9a",
+            value: "4",
+          },
         ];
       case "Rejected":
       case "Closed":
       default:
-        return [];   // No buttons
+        return []; // No buttons
     }
   };
 
   const handleAction = (value, reqID) => {
-    debugger;
-    if (!validateModelData()) return;
+    if (!validateModelData(value)) return;
     setModelreqID(reqID);
     setPendingValue(value);
     setConfirmModal(true);
@@ -309,7 +368,7 @@ const AdminDashboard = () => {
         technician: modeldata.technician,
         remarks: modeldata.remarks,
         admin: modeldata.admin,
-        cost: modeldata.cost
+        cost: modeldata.cost,
       };
       await updateAction(payload);
       fetchData();
@@ -322,8 +381,7 @@ const AdminDashboard = () => {
       }, 2000);
       setViewModalOpen(false); //closing the modal pop up on updated status
       setSelectedRow(null);
-    }
-    catch (error) {
+    } catch (error) {
       console.error("Status update failed", error);
     }
   };
@@ -338,11 +396,16 @@ const AdminDashboard = () => {
     });
 
     switch (type) {
-      case "approve": return <CheckCircleIcon sx={iconStyle("#2e7d32")} />;
-      case "onhold": return <PauseCircleFilledIcon sx={iconStyle("#e65100")} />;
-      case "reject": return <CancelIcon sx={iconStyle("#c62828")} />;
-      case "close": return <LockIcon sx={iconStyle("#37474f")} />;
-      default: return <CheckCircleIcon sx={iconStyle("#4caf50")} />;
+      case "approve":
+        return <CheckCircleIcon sx={iconStyle("#2e7d32")} />;
+      case "onhold":
+        return <PauseCircleFilledIcon sx={iconStyle("#e65100")} />;
+      case "reject":
+        return <CancelIcon sx={iconStyle("#c62828")} />;
+      case "close":
+        return <LockIcon sx={iconStyle("#37474f")} />;
+      default:
+        return <CheckCircleIcon sx={iconStyle("#4caf50")} />;
     }
   };
   const convertToISO = (dateStr) => {
@@ -371,16 +434,11 @@ const AdminDashboard = () => {
         apply.endDate === "" ||
         new Date(convertToISO(row.requestDate)) <= new Date(apply.endDate);
 
-
       return (
-        matchesSearch &&
-        matchesStatus &&
-        matchesStartDate &&
-        matchesEndDate
+        matchesSearch && matchesStatus && matchesStartDate && matchesEndDate
       );
     });
   }, [search, rows, apply]);
-
 
   const handleApplyFilters = () => {
     const today = new Date().toISOString().split("T")[0];
@@ -398,7 +456,7 @@ const AdminDashboard = () => {
     setApply({
       startDate,
       endDate: finalEndDate,
-      searchStatus
+      searchStatus,
     });
   };
 
@@ -407,78 +465,95 @@ const AdminDashboard = () => {
     setModeldataErrors((prev) => ({ ...prev, [field]: "" })); // clear error on type
   };
 
+  const validateModelData = (statusId) => {
+    try {
+      const errors = {};
 
+      if (statusId == 3 || statusId == 4) {
+      } else if (!selectedRow?.technician && !modeldata.technician.trim()) {
+        errors.technician = "Technician is required";
+      }
+      if (!modeldata.remarks.trim()) {
+        errors.remarks = "Remarks is required";
+      }
 
-  const validateModelData = () => {
-    debugger;
-    const errors = {};
-
-    if (!selectedRow?.technician && !modeldata.technician.trim()) {
-      errors.technician = "Technician is required";
+      setModeldataErrors(errors);
+      return Object.keys(errors).length === 0; // true = valid
     }
-    if (!modeldata.remarks.trim()) {
-      errors.remarks = "Remarks is required";
+    catch (error) {
+      console.error("Error :", error);
+      navigate("/error");
     }
-
-    setModeldataErrors(errors);
-    return Object.keys(errors).length === 0; // true = valid
   };
 
   const getStatusIcon = (status) => {
     switch (status) {
       case "Pending":
-        return <Box sx={{ display: "inline", color: "#534851" }}>
-          <Schedule sx={{ fontSize: 14 }} /> Pending
-        </Box>;
+        return (
+          <Box sx={{ display: "inline", color: "#534851" }}>
+            <Schedule sx={{ fontSize: 14 }} /> Pending
+          </Box>
+        );
       case "InProgress":
-        return <Box sx={{ display: "inline", color: "#2e607d" }}>
-          <HourglassEmpty sx={{ fontSize: 14 }} /> InProgress
-        </Box>;
+        return (
+          <Box sx={{ display: "inline", color: "#2e607d" }}>
+            <HourglassEmpty sx={{ fontSize: 14 }} /> InProgress
+          </Box>
+        );
       case "OnHold":
-        return <Box sx={{ display: "inline", color: "#e65100" }}>
-          <PauseCircle sx={{ fontSize: 14 }} /> OnHold
-        </Box>;
+        return (
+          <Box sx={{ display: "inline", color: "#e65100" }}>
+            <PauseCircle sx={{ fontSize: 14 }} /> OnHold
+          </Box>
+        );
       case "Rejected":
-        return <Box sx={{ display: "inline", color: "#c62828" }}>
-          <Cancel sx={{ fontSize: 14 }} /> Rejected
-        </Box>;
+        return (
+          <Box sx={{ display: "inline", color: "#c62828" }}>
+            <Cancel sx={{ fontSize: 14 }} /> Rejected
+          </Box>
+        );
       case "Closed":
-        return <Box sx={{ display: "inline", color: "#378a42" }}>
-          <CheckCircle sx={{ fontSize: 14 }} /> Closed
-        </Box>;
+        return (
+          <Box sx={{ display: "inline", color: "#378a42" }}>
+            <CheckCircle sx={{ fontSize: 14 }} /> Closed
+          </Box>
+        );
       default:
-        return <Box sx={{ display: "inline" }}>
-          <Schedule sx={{ fontSize: 14 }} /> UnKnown
-        </Box>;
+        return (
+          <Box sx={{ display: "inline" }}>
+            <Schedule sx={{ fontSize: 14 }} /> UnKnown
+          </Box>
+        );
     }
-  }
+  };
 
   const loadFile = async (requestId) => {
     try {
       const response = await getFileByRequestId(requestId);
-      const ext = selectedRow.attachment.split('.').pop().toLowerCase();
+      const ext = selectedRow.attachment.split(".").pop().toLowerCase();
       const mimeTypes = {
-        png: 'image/png',
-        jpg: 'image/jpeg',
-        jpeg: 'image/jpeg',
-        webp: 'image/webp',
-        pdf: 'application/pdf',
-        mp4: 'video/mp4',
-        mov: 'video/quicktime',
+        png: "image/png",
+        jpg: "image/jpeg",
+        jpeg: "image/jpeg",
+        webp: "image/webp",
+        pdf: "application/pdf",
+        mp4: "video/mp4",
+        mov: "video/quicktime",
       };
-      const mime = mimeTypes[ext] || 'application/octet-stream';
+      const mime = mimeTypes[ext] || "application/octet-stream";
       const blob = new Blob([response.data], { type: mime });
       const url = URL.createObjectURL(blob);
       setFileUrl(url);
       setFileExt(ext);
-    } catch (error) {
+    }
+    catch (error) {
       console.error("Failed to load file:", error);
+      navigate("/error");
     }
   };
 
   return (
     <>
-
       <Box
         sx={{
           display: "flex",
@@ -491,10 +566,9 @@ const AdminDashboard = () => {
           width: "80vw",
           margin: "30px auto",
           borderRadius: 2,
-          backgroundColor: "#fafafa"
+          backgroundColor: "#fafafa",
         }}
       >
-
         {/* Search Box */}
         <Box
           sx={{
@@ -515,7 +589,7 @@ const AdminDashboard = () => {
             onChange={(e) => setSearch(e.target.value)}
             InputProps={{
               disableUnderline: true,
-              sx: { fontSize: "1rem" }
+              sx: { fontSize: "1rem" },
             }}
           />
 
@@ -525,7 +599,7 @@ const AdminDashboard = () => {
               ml: 1,
               color: "#1976d2",
               cursor: "pointer",
-              "&:hover": { opacity: 0.8 }
+              "&:hover": { opacity: 0.8 },
             }}
           />
         </Box>
@@ -549,14 +623,14 @@ const AdminDashboard = () => {
               fullWidth
               value={startDate}
               onChange={(e) => setStartDate(e.target.value)}
-              InputProps={{ disableUnderline: true, readOnly: true, }}
+              InputProps={{ disableUnderline: true, readOnly: true }}
             />
             <CalendarMonthIcon
               sx={{
                 fontSize: 26,
                 color: "#1976d2",
                 cursor: "pointer",
-                "&:hover": { opacity: 0.8 }
+                "&:hover": { opacity: 0.8 },
               }}
               onClick={() => setOpenStartCalendar(true)}
             />
@@ -575,7 +649,6 @@ const AdminDashboard = () => {
               border: "1px solid #d0d7de",
             }}
           >
-
             <TextField
               placeholder="End Date"
               variant="standard"
@@ -589,7 +662,7 @@ const AdminDashboard = () => {
                 fontSize: 26,
                 color: "#1976d2",
                 cursor: "pointer",
-                "&:hover": { opacity: 0.8 }
+                "&:hover": { opacity: 0.8 },
               }}
               onClick={() => setOpenEndCalendar(true)}
             />
@@ -605,11 +678,10 @@ const AdminDashboard = () => {
             slotProps={{
               textField: { sx: { display: "none" } },
               popper: {
-                anchorEl: startRef.current
-              }
+                anchorEl: startRef.current,
+              },
             }}
           />
-
 
           {/* Hidden End Date Picker */}
           <DatePicker
@@ -622,15 +694,11 @@ const AdminDashboard = () => {
             slotProps={{
               textField: { sx: { display: "none" } },
               popper: {
-                anchorEl: endRef.current
-              }
+                anchorEl: endRef.current,
+              },
             }}
           />
-
-
         </LocalizationProvider>
-
-
 
         <FormControl
           size="small"
@@ -657,7 +725,9 @@ const AdminDashboard = () => {
             label="Status"
             onChange={(e) => setSearchStatus(e.target.value)}
           >
-            <MenuItem value=""><em>All</em></MenuItem>
+            <MenuItem value="">
+              <em>All</em>
+            </MenuItem>
             <MenuItem value="Pending">Pending</MenuItem>
             <MenuItem value="InProgress">Approved</MenuItem>
             <MenuItem value="Rejected">Rejected</MenuItem>
@@ -673,7 +743,7 @@ const AdminDashboard = () => {
             backgroundColor: "#1976d2",
             "&:hover": { backgroundColor: "#125ea8" },
             height: 45,
-            px: 4
+            px: 4,
           }}
           onClick={handleApplyFilters}
         >
@@ -689,23 +759,21 @@ const AdminDashboard = () => {
             color: "#1976d2",
             "&:hover": {
               borderColor: "#125ea8",
-              backgroundColor: "#e8f1fb"
+              backgroundColor: "#e8f1fb",
             },
             height: 45,
-            px: 4
+            px: 4,
           }}
           onClick={() => navigate(0)}
         >
           Reset
         </Button>
-
-
       </Box>
 
       <Box
         sx={{
           width: "80vw",
-          margin: "30px auto"
+          margin: "30px auto",
         }}
       >
         <Box
@@ -714,7 +782,7 @@ const AdminDashboard = () => {
             borderColor: "primary.light",
             "& .MuiDataGrid-cell:hover": { color: "primary.main" },
             height: "67vh",
-            width: "100%"
+            width: "100%",
           }}
         >
           <DataGrid
@@ -722,22 +790,27 @@ const AdminDashboard = () => {
             columns={columns}
             pageSizeOptions={[10, 25, 50, 100]}
             initialState={{
-              pagination: { paginationModel: { pageSize: 10 } }
+              pagination: { paginationModel: { pageSize: 10 } },
             }}
             disableRowSelectionOnClick
             columnReordering
             sx={{
               "& .MuiTablePagination-root p": {
                 marginTop: 0,
-                marginBottom: 0
-              }
+                marginBottom: 0,
+              },
             }}
           />
         </Box>
-
       </Box>
       {/* View Modal */}
-      <Modal open={viewmodalOpen} onClose={() => { setViewModalOpen(false); setSelectedRow(null); }}>
+      <Modal
+        open={viewmodalOpen}
+        onClose={() => {
+          setViewModalOpen(false);
+          setSelectedRow(null);
+        }}
+      >
         <Box
           sx={{
             position: "absolute",
@@ -768,19 +841,41 @@ const AdminDashboard = () => {
             <Typography variant="h6" sx={{ color: "#fff", fontWeight: 600 }}>
               View Request Details — {selectedRow?.requestId}
             </Typography>
-            <IconButton onClick={() => { setViewModalOpen(false); setSelectedRow(null); }} sx={{ color: "#fff" }}>
+            <IconButton
+              onClick={() => {
+                setViewModalOpen(false);
+                setSelectedRow(null);
+              }}
+              sx={{ color: "#fff" }}
+            >
               <Close />
             </IconButton>
           </Box>
 
           <Box sx={{ px: 3, py: 2.5 }}>
-
             {/* Section 1 — Request Info */}
-            <Typography variant="subtitle2" sx={{ color: "#1e3a5f", fontWeight: 700, mb: 1.5, textTransform: "uppercase", letterSpacing: 0.8, fontSize: 11 }}>
+            <Typography
+              variant="subtitle2"
+              sx={{
+                color: "#1e3a5f",
+                fontWeight: 700,
+                mb: 1.5,
+                textTransform: "uppercase",
+                letterSpacing: 0.8,
+                fontSize: 11,
+              }}
+            >
               Request Information
             </Typography>
 
-            <Box sx={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 2, mb: 2 }}>
+            <Box
+              sx={{
+                display: "grid",
+                gridTemplateColumns: "1fr 1fr 1fr",
+                gap: 2,
+                mb: 2,
+              }}
+            >
               {[
                 { label: "Facility", value: selectedRow?.facility },
                 { label: "Location", value: selectedRow?.location },
@@ -792,285 +887,459 @@ const AdminDashboard = () => {
                 { label: "Date", value: selectedRow?.requestDate },
               ].map(({ label, value }) => (
                 <Box key={label}>
-                  <Typography sx={{ fontSize: 11, color: "text.secondary", mb: 0.3 }}>{label}</Typography>
-                  <Typography sx={{ fontSize: 13, fontWeight: 600, color: "text.primary" }}>{value || "—"}</Typography>
+                  <Typography
+                    sx={{ fontSize: 11, color: "text.secondary", mb: 0.3 }}
+                  >
+                    {label}
+                  </Typography>
+                  <Typography
+                    sx={{
+                      fontSize: 13,
+                      fontWeight: 600,
+                      color: "text.primary",
+                    }}
+                  >
+                    {value || "—"}
+                  </Typography>
                 </Box>
               ))}
 
               {/* Attachment */}
-              {selectedRow?.attachment && (() => {
-                const ext = selectedRow.attachment.split('.').pop().toLowerCase();
-                const imageExts = ['png', 'jpg', 'jpeg', 'webp'];
-                const videoExts = ['mp4', 'mov'];
-                const isPdf = ext === 'pdf';
-                const isImage = imageExts.includes(ext);
-                const isVideo = videoExts.includes(ext);
-                const canView = isImage || isVideo || isPdf;
+              {selectedRow?.attachment &&
+                (() => {
+                  const ext = selectedRow.attachment
+                    .split(".")
+                    .pop()
+                    .toLowerCase();
+                  const imageExts = ["png", "jpg", "jpeg", "webp"];
+                  const videoExts = ["mp4", "mov"];
+                  const isPdf = ext === "pdf";
+                  const isImage = imageExts.includes(ext);
+                  const isVideo = videoExts.includes(ext);
+                  const canView = isImage || isVideo || isPdf;
 
-                return (
-                  <Box>
-                    <Typography sx={{ fontSize: 11, color: "text.secondary", mb: 0.3 }}>
-                      Attachment
-                    </Typography>
-                    <Button
-                      size="small"
-                      variant="outlined"
-                      startIcon={canView
-                        ? <Visibility sx={{ fontSize: 13 }} />
-                        : <Download sx={{ fontSize: 13 }} />
-                      }
-                      disabled={!fileUrl} // ✅ Disable until file loaded
-                      onClick={() => {
-                        if (!fileUrl) return;
-                        if (isImage) {
-                          setPreview({ open: true, type: 'image', url: fileUrl });
-                        } else if (isVideo) {
-                          setPreview({ open: true, type: 'video', url: fileUrl });
-                        } else if (isPdf) {
-                          window.open(fileUrl, '_blank');
-                        } else {
-                          // Download
-                          const a = document.createElement('a');
-                          a.href = fileUrl;
-                          a.download = selectedRow.attachment;
-                          a.click();
+                  return (
+                    <Box>
+                      <Typography
+                        sx={{ fontSize: 11, color: "text.secondary", mb: 0.3 }}
+                      >
+                        Attachment
+                      </Typography>
+                      <Button
+                        size="small"
+                        variant="outlined"
+                        startIcon={
+                          canView ? (
+                            <Visibility sx={{ fontSize: 13 }} />
+                          ) : (
+                            <Download sx={{ fontSize: 13 }} />
+                          )
                         }
-                      }}
-                      sx={{ fontSize: 12, textTransform: "none", borderRadius: 2, py: 0.3 }}
-                    >
-                      {!fileUrl
-                        ? 'Loading...'
-                        : canView ? 'View File' : 'Download File'
-                      }
-                    </Button>
-                  </Box>
-                );
-              })()}
+                        disabled={!fileUrl} // ✅ Disable until file loaded
+                        onClick={() => {
+                          if (!fileUrl) return;
+                          if (isImage) {
+                            setPreview({
+                              open: true,
+                              type: "image",
+                              url: fileUrl,
+                            });
+                          } else if (isVideo) {
+                            setPreview({
+                              open: true,
+                              type: "video",
+                              url: fileUrl,
+                            });
+                          } else if (isPdf) {
+                            window.open(fileUrl, "_blank");
+                          } else {
+                            // Download
+                            const a = document.createElement("a");
+                            a.href = fileUrl;
+                            a.download = selectedRow.attachment;
+                            a.click();
+                          }
+                        }}
+                        sx={{
+                          fontSize: 12,
+                          textTransform: "none",
+                          borderRadius: 2,
+                          py: 0.3,
+                        }}
+                      >
+                        {!fileUrl
+                          ? "Loading..."
+                          : canView
+                            ? "View File"
+                            : "Download File"}
+                      </Button>
+                    </Box>
+                  );
+                })()}
             </Box>
 
             <Divider sx={{ my: 2 }} />
 
             {/* Section 2 — Approver Info */}
-            <Typography variant="subtitle2" sx={{ color: "#1e3a5f", fontWeight: 700, mb: 1.5, textTransform: "uppercase", letterSpacing: 0.8, fontSize: 11 }}>
+            <Typography
+              variant="subtitle2"
+              sx={{
+                color: "#1e3a5f",
+                fontWeight: 700,
+                mb: 1.5,
+                textTransform: "uppercase",
+                letterSpacing: 0.8,
+                fontSize: 11,
+              }}
+            >
               Approver Details
             </Typography>
-            <Box sx={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 2, mb: 2 }}>
+            <Box
+              sx={{
+                display: "grid",
+                gridTemplateColumns: "1fr 1fr 1fr 1fr",
+                gap: 2,
+                mb: 2,
+              }}
+            >
               {[
-                { label: "Admin", field: null, value: selectedRow?.status === "Pending" ? userDetail.name : selectedRow?.admin },
-                { label: "Technician", field: "technician", value: selectedRow?.technician },
-                { label: "Status", field: null, value: getStatusIcon(selectedRow?.status) },
-                (selectedRow?.status !== 'Rejected' && selectedRow?.status !== 'Pending') &&
-                { label: "Cost", field: null, value: selectedRow?.cost },
-              ].filter(Boolean).map(({ label, field, value }) => (
-                <Box key={label}>
-                  <Typography sx={{ fontSize: 11, color: "text.secondary", mb: 0.3 }}>
-                    {label}
-                  </Typography>
-
-                  {value ? (
-                    // Already has data — show as read-only
-                    <Typography sx={{ fontSize: 13, fontWeight: 600, color: "text.primary" }}>
-                      {value}
+                {
+                  label: "Admin",
+                  field: null,
+                  value:
+                    selectedRow?.status === "Pending"
+                      ? userDetail.name
+                      : selectedRow?.admin,
+                },
+                {
+                  label: "Technician",
+                  field: "technician",
+                  value: selectedRow?.technician,
+                },
+                {
+                  label: "Status",
+                  field: null,
+                  value: getStatusIcon(selectedRow?.status),
+                },
+                selectedRow?.status !== "Rejected" &&
+                  selectedRow?.status !== "Pending" && {
+                    label: "Cost",
+                    field: null,
+                    value: selectedRow?.cost,
+                  },
+              ]
+                .filter(Boolean)
+                .map(({ label, field, value }) => (
+                  <Box key={label}>
+                    <Typography
+                      sx={{ fontSize: 11, color: "text.secondary", mb: 0.3 }}
+                    >
+                      {label}
                     </Typography>
-                  ) : field ? (
-                    <TextField
-                      placeholder="Enter Technician"
-                      size="small"
-                      value={modeldata.technician}
-                      onChange={handleModelChange("technician")}
-                      error={!!modeldataErrors.technician}
-                      helperText={modeldataErrors.technician}
-                      sx={{
-                        width: "100%",
-                        "& .MuiOutlinedInput-root": { borderRadius: 2, fontSize: 13 },
-                      }}
-                    />
-                  ) : (
-                    // Admin and Status — show dash when empty
-                    <Typography sx={{ fontSize: 13, color: "text.disabled" }}>—</Typography>
-                  )}
-                </Box>
-              ))}
+
+                    {value ? (
+                      // Already has data — show as read-only
+                      <Typography
+                        sx={{
+                          fontSize: 13,
+                          fontWeight: 600,
+                          color: "text.primary",
+                        }}
+                      >
+                        {value}
+                      </Typography>
+                    ) : field ? (
+                      <TextField
+                        placeholder="Enter Technician"
+                        size="small"
+                        value={modeldata.technician}
+                        onChange={handleModelChange("technician")}
+                        error={!!modeldataErrors.technician}
+                        helperText={modeldataErrors.technician}
+                        sx={{
+                          width: "100%",
+                          "& .MuiOutlinedInput-root": {
+                            borderRadius: 2,
+                            fontSize: 13,
+                          },
+                        }}
+                      />
+                    ) : (
+                      // Admin and Status — show dash when empty
+                      <Typography sx={{ fontSize: 13, color: "text.disabled" }}>
+                        —
+                      </Typography>
+                    )}
+                  </Box>
+                ))}
             </Box>
 
             {/* Issue Description */}
-            <Box sx={{ bgcolor: "#f5f7fa", borderRadius: 2, px: 2, py: 1.5, mb: 1.5 }}>
-              <Typography sx={{ fontSize: 11, color: "text.secondary", mb: 0.3 }}>Issue Description</Typography>
-              <Typography sx={{ fontSize: 13, color: "text.primary" }}>{selectedRow?.description || "—"}</Typography>
+            <Box
+              sx={{
+                bgcolor: "#f5f7fa",
+                borderRadius: 2,
+                px: 2,
+                py: 1.5,
+                mb: 1.5,
+              }}
+            >
+              <Typography
+                sx={{ fontSize: 11, color: "text.secondary", mb: 0.3 }}
+              >
+                Issue Description
+              </Typography>
+              <Typography sx={{ fontSize: 13, color: "text.primary" }}>
+                {selectedRow?.description || "—"}
+              </Typography>
             </Box>
 
             {/* Admin Remarks (read-only, shown if exists) */}
             {selectedRow?.adminRemarks && (
-              <Box sx={{ bgcolor: "#f5f7fa", borderRadius: 2, px: 2, py: 1.5, mb: 2 }}>
-                <Typography sx={{ fontSize: 11, color: "text.secondary", mb: 0.3 }}>Previous Admin Remarks</Typography>
-                <Typography sx={{ fontSize: 13, color: "text.primary" }}>{selectedRow.adminRemarks}</Typography>
+              <Box
+                sx={{
+                  bgcolor: "#f5f7fa",
+                  borderRadius: 2,
+                  px: 2,
+                  py: 1.5,
+                  mb: 2,
+                }}
+              >
+                <Typography
+                  sx={{ fontSize: 11, color: "text.secondary", mb: 0.3 }}
+                >
+                  Previous Admin Remarks
+                </Typography>
+                <Typography sx={{ fontSize: 13, color: "text.primary" }}>
+                  {selectedRow.adminRemarks}
+                </Typography>
               </Box>
             )}
 
-            {(selectedRow?.status !== 'Rejected' && selectedRow?.status !== 'Closed') && (<Divider sx={{ my: 2 }} />)}
+            {selectedRow?.status !== "Rejected" &&
+              selectedRow?.status !== "Closed" && <Divider sx={{ my: 2 }} />}
 
             {/* Section 3 — Cost & Remarks */}
-            {(selectedRow?.status !== 'Rejected' && selectedRow?.status !== 'Closed') && (
-              <Box>
-
-                {/* Cost Field */}
-                <Typography variant="subtitle2" sx={{ color: "#1e3a5f", fontWeight: 700, mb: 1, textTransform: "uppercase", letterSpacing: 0.8, fontSize: 11 }}>
-                  Cost
-                </Typography>
-                <TextField
-                  placeholder="0.00"
-                  size="small"
-                  value={modeldata.cost}
-                  onChange={(e) => {
-                    const value = e.target.value;
-                    // Allow only numbers and single decimal point
-                    if (/^\d*\.?\d*$/.test(value) || value === '') {
-                      handleModelChange("cost")(e);
-                    }
-                  }}
-                  onPaste={(e) => {
-                    const pasted = e.clipboardData.getData('text');
-                    // Block paste if not valid number
-                    if (!/^\d*\.?\d*$/.test(pasted)) {
-                      e.preventDefault();
-                    }
-                  }}
-                  onDrop={(e) => {
-                    // Block drag & drop of invalid text
-                    const dropped = e.dataTransfer.getData('text');
-                    if (!/^\d*\.?\d*$/.test(dropped)) {
-                      e.preventDefault();
-                    }
-                  }}
-                  error={!!modeldataErrors.cost}
-                  helperText={modeldataErrors.cost}
-                  inputProps={{ inputMode: "decimal" }}
-                  sx={{
-                    mb: 2.5,
-                    width: "150px",
-                    "& .MuiOutlinedInput-root": { borderRadius: 2, fontSize: 13 },
-                  }}
-                />
-
-                {/* Remarks Field */}
-                <Typography variant="subtitle2" sx={{ color: "#1e3a5f", fontWeight: 700, mb: 1, textTransform: "uppercase", letterSpacing: 0.8, fontSize: 11 }}>
-                  Remarks
-                </Typography>
-                <TextField
-                  fullWidth
-                  multiline
-                  rows={3}
-                  placeholder="Enter your remarks here..."
-                  size="small"
-                  value={modeldata.remarks}
-                  onChange={handleModelChange("remarks")}
-                  error={!!modeldataErrors.remarks}
-                  helperText={modeldataErrors.remarks}
-                  sx={{
-                    mb: 2.5,
-                    "& .MuiOutlinedInput-root": { borderRadius: 2, fontSize: 13 },
-                  }}
-                />
-              </Box>
-            )}
-
-            {/* Action Buttons */}
-            {modeldata &&
-              <Box sx={{ display: "flex", gap: 1.5, justifyContent: "flex-end" }}>
-                {getActionButtons(selectedRow?.status).map(({ label, color, bg, border, value }) => (
-                  <Button
-                    key={label}
-                    variant="contained"
-                    size="small"
-                    onClick={() => handleAction(value, selectedRow?.requestId)}
+            {selectedRow?.status !== "Rejected" &&
+              selectedRow?.status !== "Closed" && (
+                <Box>
+                  {/* Cost Field */}
+                  <Typography
+                    variant="subtitle2"
                     sx={{
-                      bgcolor: bg, color,
-                      border: `1px solid ${border}`,
-                      boxShadow: "none", fontWeight: 600, fontSize: 12,
-                      borderRadius: 2, textTransform: "none", px: 2.5,
-                      "&:hover": { bgcolor: border, boxShadow: "none" },
+                      color: "#1e3a5f",
+                      fontWeight: 700,
+                      mb: 1,
+                      textTransform: "uppercase",
+                      letterSpacing: 0.8,
+                      fontSize: 11,
                     }}
                   >
-                    {label}
-                  </Button>
-                ))}
+                    Cost
+                  </Typography>
+                  <TextField
+                    placeholder="0.00"
+                    size="small"
+                    value={modeldata.cost}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      // Allow only numbers and single decimal point
+                      if (/^\d*\.?\d*$/.test(value) || value === "") {
+                        handleModelChange("cost")(e);
+                      }
+                    }}
+                    onPaste={(e) => {
+                      const pasted = e.clipboardData.getData("text");
+                      // Block paste if not valid number
+                      if (!/^\d*\.?\d*$/.test(pasted)) {
+                        e.preventDefault();
+                      }
+                    }}
+                    onDrop={(e) => {
+                      // Block drag & drop of invalid text
+                      const dropped = e.dataTransfer.getData("text");
+                      if (!/^\d*\.?\d*$/.test(dropped)) {
+                        e.preventDefault();
+                      }
+                    }}
+                    error={!!modeldataErrors.cost}
+                    helperText={modeldataErrors.cost}
+                    inputProps={{ inputMode: "decimal" }}
+                    sx={{
+                      mb: 2.5,
+                      width: "150px",
+                      "& .MuiOutlinedInput-root": {
+                        borderRadius: 2,
+                        fontSize: 13,
+                      },
+                    }}
+                  />
+
+                  {/* Remarks Field */}
+                  <Typography
+                    variant="subtitle2"
+                    sx={{
+                      color: "#1e3a5f",
+                      fontWeight: 700,
+                      mb: 1,
+                      textTransform: "uppercase",
+                      letterSpacing: 0.8,
+                      fontSize: 11,
+                    }}
+                  >
+                    Remarks
+                  </Typography>
+                  <TextField
+                    fullWidth
+                    multiline
+                    rows={3}
+                    placeholder="Enter your remarks here..."
+                    size="small"
+                    value={modeldata.remarks}
+                    onChange={handleModelChange("remarks")}
+                    error={!!modeldataErrors.remarks}
+                    helperText={modeldataErrors.remarks}
+                    sx={{
+                      mb: 2.5,
+                      "& .MuiOutlinedInput-root": {
+                        borderRadius: 2,
+                        fontSize: 13,
+                      },
+                    }}
+                  />
+                </Box>
+              )}
+
+            {/* Action Buttons */}
+            {modeldata && (
+              <Box
+                sx={{ display: "flex", gap: 1.5, justifyContent: "flex-end" }}
+              >
+                {getActionButtons(selectedRow?.status).map(
+                  ({ label, color, bg, border, value }) => (
+                    <Button
+                      key={label}
+                      variant="contained"
+                      size="small"
+                      onClick={() =>
+                        handleAction(value, selectedRow?.requestId)
+                      }
+                      sx={{
+                        bgcolor: bg,
+                        color,
+                        border: `1px solid ${border}`,
+                        boxShadow: "none",
+                        fontWeight: 600,
+                        fontSize: 12,
+                        borderRadius: 2,
+                        textTransform: "none",
+                        px: 2.5,
+                        "&:hover": { bgcolor: border, boxShadow: "none" },
+                      }}
+                    >
+                      {label}
+                    </Button>
+                  ),
+                )}
               </Box>
-            }
+            )}
           </Box>
         </Box>
       </Modal>
       {/* Confirm Modal */}
-      {confirmModal && pendingValue && (() => {
-        const config = STATUS_MODAL_CONFIG[pendingValue];
-        return (
-          <Modal open={confirmModal} onClose={() => setConfirmModal(false)}>
-            <Box sx={{
-              position: "absolute", top: "50%", left: "50%",
-              transform: "translate(-50%, -50%)",
-              width: "100%", maxWidth: 380,
-              bgcolor: "background.paper", boxShadow: 24,
-              borderRadius: 3, p: { xs: 2, sm: 4 },
-              textAlign: "center", maxHeight: "90vh", overflowY: "auto"
-            }}>
-              <StatusIcon type={config.icon} />
-
-              <Typography variant="h6" sx={{ fontWeight: "bold", mb: 1 }}>
-                Confirm {config.label}
-              </Typography>
-
-              <Typography sx={{ mb: 3, color: "gray" }}>
-                {config.confirmText}
-              </Typography>
-
-              <Button
-                variant="contained"
-                color={config.btnColor}
-                fullWidth
-                sx={{ mb: 1 }}
-                onClick={confirmAction}
+      {confirmModal &&
+        pendingValue &&
+        (() => {
+          const config = STATUS_MODAL_CONFIG[pendingValue];
+          return (
+            <Modal open={confirmModal} onClose={() => setConfirmModal(false)}>
+              <Box
+                sx={{
+                  position: "absolute",
+                  top: "50%",
+                  left: "50%",
+                  transform: "translate(-50%, -50%)",
+                  width: "100%",
+                  maxWidth: 380,
+                  bgcolor: "background.paper",
+                  boxShadow: 24,
+                  borderRadius: 3,
+                  p: { xs: 2, sm: 4 },
+                  textAlign: "center",
+                  maxHeight: "90vh",
+                  overflowY: "auto",
+                }}
               >
-                Yes, {config.label}
-              </Button>
+                <StatusIcon type={config.icon} />
 
-              <Button
-                variant="outlined"
-                color="error"
-                fullWidth
-                onClick={() => setConfirmModal(false)}
-              >
-                Cancel
-              </Button>
-            </Box>
-          </Modal>
-        );
-      })()}
+                <Typography variant="h6" sx={{ fontWeight: "bold", mb: 1 }}>
+                  Confirm {config.label}
+                </Typography>
+
+                <Typography sx={{ mb: 3, color: "gray" }}>
+                  {config.confirmText}
+                </Typography>
+
+                <Button
+                  variant="contained"
+                  color={config.btnColor}
+                  fullWidth
+                  sx={{ mb: 1 }}
+                  onClick={confirmAction}
+                >
+                  Yes, {config.label}
+                </Button>
+
+                <Button
+                  variant="outlined"
+                  color="error"
+                  fullWidth
+                  onClick={() => setConfirmModal(false)}
+                >
+                  Cancel
+                </Button>
+              </Box>
+            </Modal>
+          );
+        })()}
 
       {/* Success Modal */}
-      {successModal && pendingValue && (() => {
-        const config = STATUS_MODAL_CONFIG[pendingValue];
-        return (
-          <Modal open={successModal} onClose={() => setSuccessModal(false)}>
-            <Box sx={{
-              position: "absolute", top: "50%", left: "50%",
-              transform: "translate(-50%, -50%)",
-              width: "100%", maxWidth: 380,
-              bgcolor: "background.paper", boxShadow: 24,
-              borderRadius: 3, p: { xs: 3, sm: 4 },
-              textAlign: "center", maxHeight: "90vh", overflowY: "auto"
-            }}>
-              <StatusIcon type={config.icon} />
+      {successModal &&
+        pendingValue &&
+        (() => {
+          const config = STATUS_MODAL_CONFIG[pendingValue];
+          return (
+            <Modal open={successModal} onClose={() => setSuccessModal(false)}>
+              <Box
+                sx={{
+                  position: "absolute",
+                  top: "50%",
+                  left: "50%",
+                  transform: "translate(-50%, -50%)",
+                  width: "100%",
+                  maxWidth: 380,
+                  bgcolor: "background.paper",
+                  boxShadow: 24,
+                  borderRadius: 3,
+                  p: { xs: 3, sm: 4 },
+                  textAlign: "center",
+                  maxHeight: "90vh",
+                  overflowY: "auto",
+                }}
+              >
+                <StatusIcon type={config.icon} />
 
-              <Typography variant="h6" sx={{ fontWeight: "bold", mb: 1 }}>
-                {config.successText}
-              </Typography>
+                <Typography variant="h6" sx={{ fontWeight: "bold", mb: 1 }}>
+                  {config.successText}
+                </Typography>
 
-              <Typography sx={{ color: "gray" }}>
-                Updating request status...
-              </Typography>
-            </Box>
-          </Modal>
-        );
-      })()}
+                <Typography sx={{ color: "gray" }}>
+                  Updating request status...
+                </Typography>
+              </Box>
+            </Modal>
+          );
+        })()}
 
       {/* Preview Modal — Image & Video */}
       <Dialog
@@ -1079,32 +1348,32 @@ const AdminDashboard = () => {
         maxWidth="md"
         fullWidth
       >
-        <DialogContent sx={{ p: 1, textAlign: 'center', bgcolor: '#000' }}>
+        <DialogContent sx={{ p: 1, textAlign: "center", bgcolor: "#000" }}>
           <IconButton
             onClick={() => setPreview({ open: false, type: null, url: null })}
-            sx={{ position: 'absolute', top: 8, right: 8, color: '#fff' }}
+            sx={{ position: "absolute", top: 8, right: 8, color: "#fff" }}
           >
             <Close />
           </IconButton>
 
           {/* Image Preview */}
-          {preview.type === 'image' && (
+          {preview.type === "image" && (
             <Box
               component="img"
               src={preview.url}
               alt="attachment"
-              sx={{ maxWidth: '100%', maxHeight: '80vh', objectFit: 'contain' }}
+              sx={{ maxWidth: "100%", maxHeight: "80vh", objectFit: "contain" }}
             />
           )}
 
           {/* Video Preview */}
-          {preview.type === 'video' && (
+          {preview.type === "video" && (
             <Box
               component="video"
               src={preview.url}
               controls
               autoPlay
-              sx={{ maxWidth: '100%', maxHeight: '80vh' }}
+              sx={{ maxWidth: "100%", maxHeight: "80vh" }}
             />
           )}
         </DialogContent>

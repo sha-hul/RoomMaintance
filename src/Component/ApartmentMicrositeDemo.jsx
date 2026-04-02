@@ -64,6 +64,9 @@ import {
 import CircularProgress from "@mui/material/CircularProgress";
 import { DARK, LIGHT } from "../Common/palette";
 import { getCategories } from "../Service/maintenanceService";
+import FlashOnIcon from '@mui/icons-material/FlashOn';
+import { useNavigate } from "react-router-dom";
+
 /* ─── palette ─────────────────────────────────────────────── */
 const Pl = {
   //changed from P to Pl
@@ -260,6 +263,7 @@ const StatusRow = React.memo(({ r, expanded, onToggle }) => {
 /*  MAIN COMPONENT                                             */
 /* ═══════════════════════════════════════════════════════════ */
 export default function ApartmentMicrosite() {
+  const navigate = useNavigate();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
   const isTab = useMediaQuery(theme.breakpoints.between("sm", "md"));
@@ -273,14 +277,14 @@ export default function ApartmentMicrosite() {
   const [snack, setSnack] = useState(false);
   const [expanded, setExpanded] = useState(null);
   //Theme
-  const [isDark, setIsDark] = useState(true);
+  const [isDark, setIsDark] = useState(false);
   const P = isDark ? DARK : LIGHT;
 
   //Raise Request
   const [raiseOpen, setRaiseOpen] = useState(false);
   const [categories, setCategories] = useState([]);
 
-  //GetSite Data #Shahul
+  //GetSite Data 
   const [apt, setApt] = useState({
     facility: "",
     location: "",
@@ -291,7 +295,7 @@ export default function ApartmentMicrosite() {
     amenities: [],
   });
 
-  // Get Status Details #Shahul
+  // Get Status Details 
   const [statuses, setStatuses] = useState([]);
 
   //pop up
@@ -316,7 +320,8 @@ export default function ApartmentMicrosite() {
         const resCat = await getCategories();
         setCategories(resCat.data);
       } catch (error) {
-        console.error("Error fetching categories:", error);
+        console.error("fetchInitialData - error occurred :", error);
+      //  navigate("/error");
       }
     };
 
@@ -327,7 +332,6 @@ export default function ApartmentMicrosite() {
   useEffect(() => {
 
     const fetchInitialDataByURL = async () => {
-      debugger;
       try {
         const queryParams = new URLSearchParams(location.search);
         const facid = queryParams.get("facid");
@@ -339,7 +343,7 @@ export default function ApartmentMicrosite() {
         const decrypted = await decryptParams(facid, locid, apartid);
         setData(decrypted);
 
-        // Fetch apartment details by decrypted params //#Shahul
+        // Fetch apartment details by decrypted params 
         const res = await getApartmentDetails(decrypted.facid, decrypted.locid, decrypted.apart);
         const data = res.data;
         setApt({
@@ -408,7 +412,7 @@ export default function ApartmentMicrosite() {
         //   },
         // ]);
       } catch (error) {
-        console.error("Error decrypting params:", error);
+        console.error("fetchInitialDataByURL - error occurred :", error);
       }
     };
 
@@ -424,6 +428,7 @@ export default function ApartmentMicrosite() {
   const closed = statuses.filter((s) =>
     ["Closed", "Rejected"].includes(s.status),
   ).length;
+  
   /* shared modal box */
   const ModalWrap = ({ children, open, onClose, wide }) => (
     <Modal
@@ -815,7 +820,7 @@ export default function ApartmentMicrosite() {
               delay="3"
             />
             <DetailRow
-              icon={<ConfirmationNumber sx={{ fontSize: 18 }} />}
+              icon={<FlashOnIcon sx={{ fontSize: 18 }} />}
               label="ESubscription ID"
               value={apt.subscriptionId}
               delay="4"
@@ -917,6 +922,7 @@ export default function ApartmentMicrosite() {
               flexDirection: { xs: "column", sm: "row" },
             }}
           >
+          {apt.isActive && 
             <Button
               fullWidth
               onClick={() => setRaiseOpen(true)}
@@ -941,6 +947,7 @@ export default function ApartmentMicrosite() {
             >
               Raise Request
             </Button>
+          }
 
             {/* <Button fullWidth onClick={() => setStatusOpen(true)}
               startIcon={<Schedule />}

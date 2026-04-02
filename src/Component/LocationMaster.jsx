@@ -49,19 +49,16 @@ const LocationMaster = () => {
       setFacilities(facilityRes.data);
       const locationRes = await getAllLocations();
       setLocations(locationRes.data);
-    } catch (err) {
-      console.error("Failed to load facilities and Location:", err);
+    } 
+    catch (err) {
+      console.error("loadData - error occurred:", err);
+      navigate("/error");
     }
   };
 
   useEffect(() => {
     loadData();
   }, []);
-
-  //Testing
-  // useEffect(() => {
-  //   console.log("Updated facilities:", facilities);
-  // }, [facilities]);
 
   // Add or Update Location
 
@@ -75,7 +72,6 @@ const LocationMaster = () => {
   }
 
   const handleSubmit = async () => {
-    debugger;
     if (!facilityId || !locationName.trim()) {
       showWarning("Select Facility Dropdown/Location name is required");
       return;
@@ -147,7 +143,8 @@ const LocationMaster = () => {
       await changeLocationStatus(item.id, item.isActive);
       loadData();
     } catch (error) {
-      console.error("Failed to update Location status:", error);
+      console.error("toggleStatus - error occurred:", error);
+      navigate("/error");
     }
   };
 

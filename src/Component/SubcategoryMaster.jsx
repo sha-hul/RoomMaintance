@@ -51,21 +51,16 @@ const SubcategoryMaster = () => {
       //only active categories
       setCategories(categoryRes.data);
       const subcategoryRes = await getAllSubcategories();
-      debugger;
       setSubcategories(subcategoryRes.data);
     } catch (err) {
-      console.error("Failed to load categories and Subcategory:", err);
+      console.error("loadData - error occurred:", err);
+      navigate("/error");
     }
   };
 
   useEffect(() => {
     loadData();
   }, []);
-
-  //Testing
-  // useEffect(() => {
-  //   console.log("Updated categories:", categories);
-  // }, [categories]);
 
   // Add or Update Subcategory
 
@@ -77,7 +72,6 @@ const SubcategoryMaster = () => {
   }
 
   const handleSubmit = async () => {
-    debugger;
     if (!categoryId || !subCategoryName.trim()) {
       showWarning("Select Category Dropdown/Subcategory name is required");
       return;

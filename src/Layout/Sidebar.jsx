@@ -101,6 +101,7 @@ function SidebarItem({ icon, text, path }) {
 /*  SIDEBAR                                                */
 /* ═══════════════════════════════════════════════════════ */
 export default function Sidebar() {
+    const navigate = useNavigate();
     const [expanded, setExpanded] = useState(true);
     const [userDetail, setUserdetail] = useState({
         empId: "",
@@ -110,14 +111,20 @@ export default function Sidebar() {
     });
 
     useEffect(() => {
-        const user = JSON.parse(sessionStorage.getItem("user"));
-        if(!user) return;
-        setUserdetail({
-            empId: user.empId,
-            name: user.name,
-            role: user.role,
-            mail: user.mail
-        })
+        try {
+            const user = JSON.parse(sessionStorage.getItem("user"));
+            if (!user) return;
+            setUserdetail({
+                empId: user.empId,
+                name: user.name,
+                role: user.role,
+                mail: user.mail
+            })
+        }
+        catch (error) {
+               console.error("pageload - error occurred:", error);
+               navigate("/error");
+        }
     }, [])
     return (
         <SidebarContext.Provider value={{ expanded }}>

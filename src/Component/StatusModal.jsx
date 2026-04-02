@@ -102,7 +102,6 @@ function RequestRow({ r, expanded, onToggle, statusColor, statusIcon, P, setStat
   const handleCancelRequest = async (id) => {
     if (!window.confirm("Are you sure you want to cancel this request?")) return;
     try {
-      debugger;
       await cancelMaintenanceRequest(id);
       const resReq = await getApartmentRequestDetails(data.apart);
       setStatuses(resReq.data);

@@ -19,12 +19,9 @@ const Header = () => {
         if (location.pathname === "/maintenancerequest")
             sethomeModal(true)
         else{
-            // if(){
-
-            // }
-            // else{
+            
             navigate("/admindashboard")
-            // }
+            
         }
     }
 

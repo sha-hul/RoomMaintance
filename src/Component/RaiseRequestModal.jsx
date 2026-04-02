@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   Snackbar,
   Box,
@@ -57,8 +57,7 @@ import {
   getSubCategoriesByCategory,
   submitMaintenanceRequest,
 } from "../Service/maintenanceService";
-import {getApartmentRequestDetails
-} from "../Service/apartmentmicrositeService";
+import { getApartmentRequestDetails } from "../Service/apartmentmicrositeService";
 export default function RaiseRequestModal({
   open,
   onClose,
@@ -82,6 +81,22 @@ export default function RaiseRequestModal({
   });
   const [submitted, setSubmitted] = useState(false);
   const [subCategories, setSubCategories] = useState([]);
+  const fileRef = useRef(null);
+  const [modeldataErrors, setModeldataErrors] = useState({
+    description: "",
+    employeeName: "",
+    contactNo: "",
+  });
+
+  useEffect(() => {
+    if (open) {
+      setModeldataErrors({
+        description: "",
+        employeeName: "",
+        contactNo: "",
+      });
+    }
+  }, [open]);
 
   useEffect(() => {
     debugger;
@@ -112,10 +127,12 @@ export default function RaiseRequestModal({
     } else {
       setForm(prev => ({ ...prev, [name]: value }));
     }
+    setModeldataErrors((prev) => ({ ...prev, [name]: "" }));
   };
 
   const handleSubmit = async () => {
     debugger;
+    if (!validateModelData()) return;
     let res = await confirmSubmit();
     res ? setSubmitted(true) : setSubmitted(false);
   };
@@ -153,6 +170,41 @@ export default function RaiseRequestModal({
       });
       return false;
     }
+  };
+  const validateModelData = () => {
+    const errors = {};
+
+    // Description
+    if (!form.description) {
+      errors.description = "Description is required";
+    } else if (form.description.length < 5) {
+      errors.description = "Description must be at least 5 characters";
+    }
+
+    // Employee Name
+    if (!form.employeeName) {
+      errors.employeeName = "Employee name is required";
+    } else if (form.employeeName.length < 3) {
+      errors.employeeName = "Name must be at least 3 characters";
+    } else if (/\d/.test(form.employeeName)) {
+      errors.employeeName = "Name cannot contain numbers";
+    }
+
+    // Contact No
+    if (!form.contactNo) {
+      errors.contactNo = "Contact number is required";
+    }
+    // allow only digits, spaces, +, -
+    else if (!/^[\d+\-\s]+$/.test(form.contactNo)) {
+      errors.contactNo = "Only digits, spaces, + and - are allowed";
+    }
+    // ensure at least 9 digits (not characters)
+    else if ((form.contactNo.match(/\d/g) || []).length < 9) {
+      errors.contactNo = "Contact number must contain at least 9 digits";
+    }
+
+    setModeldataErrors(errors);
+    return Object.keys(errors).length === 0;
   };
 
   return (
@@ -208,7 +260,7 @@ export default function RaiseRequestModal({
           </IconButton>
         </Box>
 
-        {!submitted ? ( //#Shahul Doubt
+        {!submitted ? ( 
           <Box
             sx={{ p: 3, display: "flex", flexDirection: "column", gap: 2.5 }}
           >
@@ -272,6 +324,8 @@ export default function RaiseRequestModal({
               value={form.description}
               onChange={handleChange}
               sx={fieldSx(P)}
+              error={!!modeldataErrors.description}
+              helperText={modeldataErrors.description}
             />
 
             {/* Attachment */}
@@ -295,7 +349,7 @@ export default function RaiseRequestModal({
               <Box
                 component="label"
                 sx={{
-                  border: `1.5px dashed ${form.attachment ? P.teal : P.border}`, 
+                  border: `1.5px dashed ${form.attachment ? P.teal : P.border}`,
                   borderRadius: "10px",
                   p: 2,
                   textAlign: "center",
@@ -311,6 +365,7 @@ export default function RaiseRequestModal({
                   hidden
                   accept=".png,.jpg,.jpeg,.pdf"
                   onChange={handleChange}
+                  ref={fileRef}
                 />
 
                 {form.attachment ? (
@@ -323,7 +378,11 @@ export default function RaiseRequestModal({
                       component="span"
                       onClick={(e) => {
                         e.preventDefault(); // prevent file dialog opening
-                        setForm(prev => ({ ...prev, attachment: null })); // ✅ Clear file
+                        setForm((prev) => ({ ...prev, attachment: null }));
+                        // Reset the actual file input
+                        if (fileRef.current) {
+                          fileRef.current.value = "";
+                        }
                       }}
                       sx={{ fontSize: "0.75rem", color: "red", cursor: "pointer", ml: 1 }}
                     >
@@ -356,6 +415,8 @@ export default function RaiseRequestModal({
                 name="employeeName"
                 onChange={handleChange}
                 sx={fieldSx(P)}
+                error={!!modeldataErrors.employeeName}
+                helperText={modeldataErrors.employeeName}
               />
               <TextField
                 fullWidth
@@ -365,6 +426,8 @@ export default function RaiseRequestModal({
                 name="contactNo"
                 onChange={handleChange}
                 sx={fieldSx(P)}
+                error={!!modeldataErrors.contactNo}
+                helperText={modeldataErrors.contactNo}
               />
             </Box>
 
@@ -379,18 +442,18 @@ export default function RaiseRequestModal({
               sx={{
                 background:
                   !form.category ||
-                    !form.subCategory ||
-                    !form.description ||
-                    !form.employeeName ||
-                    !form.contactNo
+                  !form.subCategory ||
+                  !form.description ||
+                  !form.employeeName ||
+                  !form.contactNo
                     ? P.border
                     : `linear-gradient(135deg, ${P.teal}, ${P.cyan})`,
                 color:
                   !form.category ||
-                    !form.subCategory ||
-                    !form.description ||
-                    !form.employeeName ||
-                    !form.contactNo
+                  !form.subCategory ||
+                  !form.description ||
+                  !form.employeeName ||
+                  !form.contactNo
                     ? P.muted
                     : P.bg,
                 fontFamily: "'Syne',sans-serif",

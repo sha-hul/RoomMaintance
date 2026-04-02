@@ -45,7 +45,6 @@ const MaintenanceRequest = ({ contactNo }) => {
 
     //Onload
     useEffect(() => {
-        debugger;
         const user = JSON.parse(sessionStorage.getItem("user"));
         setForm(prev => ({
             ...prev,
@@ -60,7 +59,8 @@ const MaintenanceRequest = ({ contactNo }) => {
                 const resCat = await getCategories();
                 setCategories(resCat.data);
             } catch (error) {
-                console.error("Error fetching dropdowns:", error);
+                console.error("fetchDropdowns - error occurred:", error);
+                navigate("/error");
             }
         };
 
@@ -87,7 +87,8 @@ const MaintenanceRequest = ({ contactNo }) => {
                 console.log(resApart.data);
                 setLocations(resApart.data);
             } catch (error) {
-                console.error("Error fetching locations:", error);
+                console.error("fetchLocations - error occurred:", error);
+                navigate("/error");
             }
         };
 
@@ -113,7 +114,8 @@ const MaintenanceRequest = ({ contactNo }) => {
                 console.log(resApart.data);
                 setApartments(resApart.data);
             } catch (error) {
-                console.error("Error fetching apartments:", error);
+                console.error("fetchApartments - error occurred:", error);
+                navigate("/error");
             }
         };
 
@@ -137,7 +139,8 @@ const MaintenanceRequest = ({ contactNo }) => {
                 const res = await getSubCategoriesByCategory(form.category);
                 setSubCategories(res.data);
             } catch (error) {
-                console.error("Error fetching subcategories:", error);
+                console.error("fetchSubCategories - error occurred:", error);
+                navigate("/error");
             }
         };
 
@@ -182,7 +185,6 @@ const MaintenanceRequest = ({ contactNo }) => {
     const isSubmitting = useRef(false);
 
     const confirmSubmit = async () => {
-        debugger;
         if (isSubmitting.current) return;
         isSubmitting.current = true;
 

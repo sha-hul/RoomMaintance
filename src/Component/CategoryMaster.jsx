@@ -14,7 +14,6 @@ import { useNavigate } from "react-router-dom";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 
 const CategoryMaster = (empId) => {
-
   const [categories, setCategories] = useState([]);
   const [categoryName, setCategoryName] = useState("");
   const [search, setSearch] = useState("");
@@ -38,18 +37,14 @@ const CategoryMaster = (empId) => {
       setCategories(res.data);
     }
     catch (err) {
-      console.error("Failed to load categories:", err);
+      console.error("loadCategories - error occurred:", err);
+       navigate("/error");
     }
   };
 
   useEffect(() => {
     loadCategories();
   }, []);
-
-  //Testing
-  // useEffect(() => {
-  //   console.log("Updated categories:", categories);
-  // }, [categories]);
 
   // Add or Update Category
   const handleSubmit = async () => {
@@ -96,7 +91,8 @@ const CategoryMaster = (empId) => {
       await changeCategoryStatus(item.id, item.isActive);
       loadCategories();
     } catch (error) {
-      console.error("Failed to update Category status:", error);
+      console.error("toggleStatus - error occurred:", error);
+      navigate("/error");
     }
   };
 
@@ -113,6 +109,7 @@ const CategoryMaster = (empId) => {
     setCategoryName("")
     setModalOpen(true)
   }
+  
   const handleChangePage = (event, newPage) => {
     setPage(newPage);
   };

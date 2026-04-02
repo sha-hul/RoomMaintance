@@ -39,7 +39,8 @@ const FacilityMaster = (empId) => {
       setFacilities(res.data);
     }
     catch (err) {
-      console.error("Failed to load facilities:", err);
+      console.error("loadFacilities - error occurred :", err);
+      navigate("/error");
     }
   };
 
@@ -47,14 +48,8 @@ const FacilityMaster = (empId) => {
     loadFacilities();
   }, []);
 
-  //Testing
-  // useEffect(() => {
-  //   console.log("Updated facilities:", facilities);
-  // }, [facilities]);
-
   // Add or Update Facility
   const handleSubmit = async () => {
-    debugger;
     if (!facilityName.trim()) {
       showWarning("Facility name is required");
       return;
@@ -94,6 +89,7 @@ const FacilityMaster = (empId) => {
     setEditId(item.id);
     setModalOpen(true);
   };
+
   const handleChangePage = (event, newPage) => {
     setPage(newPage);
   };
@@ -109,7 +105,8 @@ const FacilityMaster = (empId) => {
       await changeFacilityStatus(item.id, item.isActive);
       loadFacilities();
     } catch (error) {
-      console.error("Failed to update Facility status:", error);
+      console.error("toggleStatus - error occurred:", error);
+      navigate("/error");     
     }
   };
 
@@ -126,6 +123,7 @@ const FacilityMaster = (empId) => {
     setFacilityName("")
     setModalOpen(true)
   }
+  
   const blueInputStyle = {
     "& .MuiInputLabel-root": {
       color: "#1976d2"
