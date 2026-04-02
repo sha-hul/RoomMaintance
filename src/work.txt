@@ -1,25 +1,34 @@
+Apr-2
+
+Register Page Completed
+Bug Fix Test in Main Branch
+Error handling in UI
+
+
 Apr-1
 
-Bug - 
+Bug and Fixes- 
 Admin Dashboard 
-->Cost Need to be update on every action else it becomes 0 
-->Click on OnHold No Need required of Technician
-->Click on Reject No Need of Technician
-->If apartment in inActive whether I need to show the request in Admin Dashboard?
+->Cost Need to be update on every action else it becomes 0 - Done
+->Click on OnHold No Need required of Technician - Done
+->Click on Reject No Need required of Technician - Done
+->If apartment in inActive whether I need to show the request in Admin Dashboard?#Doubt
 
-
+Water Leakage on Kitchen area pipe. Need urgent fix
 Master Page
 Search on 2nd pagination
 ->It will show the result in first pagination
-->Click on Raise Request again all the form property should be in default
 
 Apartment Microsite
-->Need to disable Raise Request if apartment is inactive
-->Upload Attachment issue
-->Do I need to remove all the fields and make default when I click on raise req again isSubmitted is none?
-->Do I need to keep only one request raise for one QR Code Scan?
+->Need to disable Raise Request if apartment is inactive-DONE
+->Upload Attachment issue - DONE
+->Do I need to remove all the fields and make default when I click on raise req again isSubmitted is none?#Doubt
+->Do I need to keep only one request raise for one QR Code Scan?#Doubt
+->Form Field Validation - DONE
 
+Register Page
 
+Need to Test Back to Login is pending- Done
 
 Technician =>
 
@@ -98,3 +107,9 @@ const payload = {
               ModalWrap={ModalWrap}
               setSnackbar={setSnackbar}
             />
+
+Need API Changes Mar-31
+
+[HttpGet("getApartmentRequestDetails/{appId}")]
+public async Task<IActionResult> GetApartmentRequestDetails([FromRoute] int appId)
+{
